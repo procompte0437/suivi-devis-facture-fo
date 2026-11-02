@@ -30,7 +30,8 @@
   padding: 12px 28px 14px;
   background: transparent;
 }
-.mkt-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 28px; letter-spacing: -0.04em; color: var(--title); }
+.mkt-logo { display: flex; align-items: center; }
+.mkt-logo img { height: 46px; width: auto; display: block; }
 .mkt-links { display: flex; align-items: center; gap: 18px; margin-left: auto; font-size: 15px; }
 .mkt-links a { padding: 8px 0; }
 .mkt-links a.active { text-decoration: underline; text-underline-offset: 6px; }
@@ -564,6 +565,7 @@
 .tx { background: #fff; color: #1c3d30; }
 .tx h1, .tx h2, .tx h3 { color: #143728; }
 .tx-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.92fr);
   gap: 36px;
@@ -571,6 +573,37 @@
   padding: 28px 6vw 48px;
   background: #143728;
   color: #f4f7f2;
+  overflow: hidden;
+}
+.tx-hero-film {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: tx-film 48s linear infinite;
+}
+.tx-hero-film img {
+  width: 42vw;
+  height: 100%;
+  object-fit: cover;
+  flex: none;
+  border-radius: 0;
+}
+.tx-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(20, 55, 40, 0.9) 0%, rgba(20, 55, 40, 0.78) 46%, rgba(20, 55, 40, 0.62) 100%);
+  pointer-events: none;
+}
+.tx-hero-copy, .tx-hero figure { position: relative; z-index: 1; }
+@keyframes tx-film {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tx-hero-film { animation: none; }
 }
 .tx-hero h1 {
   color: #f4f7f2;
@@ -584,7 +617,7 @@
 .tx-hero input { flex: 1; border: 0; padding: 14px 16px; font: inherit; color: #1c3d30; background: white; outline: none; }
 .tx-hero button { border: 0; background: #1e6b45; color: white; width: 52px; font-size: 22px; }
 .tx-hero figure { margin: 0; position: relative; }
-.tx-hero img { width: 100%; height: min(560px, 70vh); object-fit: cover; display: block; border-radius: 2px; }
+.tx-hero figure img { width: 100%; height: min(560px, 70vh); object-fit: cover; display: block; border-radius: 2px; }
 .tx-hero figcaption {
   position: absolute;
   top: 16px;
@@ -785,7 +818,8 @@
     grid-template-columns: 1fr;
   }
   .tx-steps ol { grid-template-columns: 1fr; }
-  .tx-hero img { height: 320px; }
+  .tx-hero figure img { height: 320px; }
+  .tx-hero-film img { width: 78vw; height: 100%; }
   .tx-review-row { position: static; padding: 16px; background: #143728; }
   .tx-reviews > img { height: 220px; }
   .tx-foot-geo ul { grid-template-columns: 1fr 1fr; }

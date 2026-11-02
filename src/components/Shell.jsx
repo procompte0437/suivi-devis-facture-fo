@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { initials, monthLabel, ROLES } from '../format';
-import { Icon, Mark } from './ui';
+import { Icon } from './ui';
 
 const NAV = [
   { to: '/tableau', label: 'Tableau de bord', group: 'Pilotage', icon: 'board', end: true },
@@ -95,11 +95,7 @@ export default function Shell() {
       {drawer ? <div className="scrim no-print" onClick={() => setDrawer(false)} /> : null}
       <aside className={`sidebar no-print${drawer ? ' open' : ''}`} inert={!narrow && collapsed ? true : undefined}>
         <div className="brand-lockup">
-          <Mark />
-          <div>
-            <strong>DOUKOU</strong>
-            <span>Suivre</span>
-          </div>
+          <img src="/logo/logo-doukou-clair.png" alt="DOUKOU" />
         </div>
         {groups.map((group) => (
           <div className="nav-group" key={group}>

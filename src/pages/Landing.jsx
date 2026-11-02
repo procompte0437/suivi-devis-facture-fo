@@ -8,6 +8,15 @@ const ASKS = [
   ['Facture et solde', 'La facture reprend le devis', 'Les lignes ne sont pas ressaisies. L’échéance et le reste à encaisser restent visibles après l’envoi.', 'Comptabilité · Libreville'],
 ];
 
+const FILM = [
+  '/home/hero-atelier.jpg',
+  '/home/metier-platre.jpg',
+  '/home/metier-peinture.jpg',
+  '/home/metier-plomberie.jpg',
+  '/home/pro-chantier.jpg',
+  '/home/bandeau-equipe.jpg',
+];
+
 const TRADES = [
   ['/home/metier-platre.jpg', 'Ateliers', 'Tenez les acomptes, les étapes et la trésorerie de chaque mission.', '/secteurs#ateliers', 'Menuiserie, atelier, fabrication'],
   ['/home/metier-peinture.jpg', 'Agences', 'Plusieurs clients, une identité, des relances et un avancement lisible.', '/secteurs#agences', 'Studio, conseil, suivi de clients'],
@@ -33,6 +42,11 @@ export function Home() {
   return (
     <main className="tx">
       <section className="tx-hero">
+        <div className="tx-hero-film" aria-hidden="true">
+          {[...FILM, ...FILM].map((src, index) => (
+            <img key={`${src}-${index}`} src={src} alt="" />
+          ))}
+        </div>
         <div className="tx-hero-copy">
           <h1>Le moyen fiable de suivre un dossier.</h1>
           <form onSubmit={start}>
@@ -45,7 +59,7 @@ export function Home() {
         </div>
         <figure>
           <img src="/home/hero-atelier.jpg" alt="Menuisier en train de poser un parquet dans un atelier clair" />
-          <figcaption>Atelier Orée · Libreville</figcaption>
+          <figcaption>DOUKOU · Libreville</figcaption>
         </figure>
       </section>
 

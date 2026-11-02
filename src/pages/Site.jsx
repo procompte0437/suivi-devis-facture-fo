@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { api } from '../api';
-import { Mark } from '../components/ui';
 import '../site.css';
 
 export { Home } from './Landing';
@@ -106,8 +105,7 @@ export function SiteLayout() {
       <div className="mkt-header">
       <header className="mkt-nav">
         <Link to="/" className="mkt-logo" onClick={() => setMenu(false)}>
-          <Mark size={36} />
-          <span>DOUKOU</span>
+          <img src={home ? '/logo/logo-doukou.png' : '/logo/logo-doukou-clair.png'} alt="DOUKOU" />
         </Link>
         <button type="button" className="mkt-burger" aria-expanded={menu} onClick={() => setMenu((value) => !value)}>
           {menu ? 'Fermer' : 'Menu'}
@@ -148,7 +146,7 @@ function SiteFooter() {
   return (
     <footer className="tx-foot">
       <div className="tx-foot-main">
-        <Link to="/" className="mkt-logo"><Mark size={34} /><span>DOUKOU</span></Link>
+        <Link to="/" className="mkt-logo"><img src="/logo/logo-doukou-clair.png" alt="DOUKOU" /></Link>
         <div className="tx-foot-cols">
           <div>
             <h2>Le dossier</h2>
@@ -294,7 +292,7 @@ function RelanceMock() {
 function DashMock({ compact = false }) {
   return (
     <div className={`mock dash ${compact ? 'compact' : ''}`}>
-      <header><b>Novembre 2026</b><span>Atelier Orée</span></header>
+      <header><b>Novembre 2026</b><span>DOUKOU</span></header>
       <ul>
         <li><span>Facturé</span><b>4 800 000</b></li>
         <li><span>Encaissé</span><b>3 100 000</b></li>
