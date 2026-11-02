@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 
 const STARTER = [
-  'Bonjour, que permet Orée ?',
+  'Bonjour, que permet DOUKOU ?',
   'Comment créer un compte ?',
   'Quels modèles de devis ?',
 ];
@@ -40,10 +40,10 @@ export default function ChatWidget() {
   return (
     <div className="chat-dock no-print">
       {open ? (
-        <section className="chat-panel" aria-label="Conversation avec Orée">
+        <section className="chat-panel" aria-label="Conversation avec DOUKOU">
           <header>
             <div>
-              <strong>Atelier</strong>
+              <strong>DOUKOU</strong>
               <span>Sans compte, déjà</span>
             </div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fermer le chat">×</button>

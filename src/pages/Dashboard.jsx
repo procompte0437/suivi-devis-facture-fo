@@ -28,7 +28,7 @@ export default function Dashboard() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Tableau de bord — Orée</p>
+          <p className="kicker">Tableau de bord — DOUKOU</p>
           <h1>{hello}, {first}.</h1>
           <p className="lead">Voici ce que l’atelier a en mouvement ce mois-ci.</p>
         </div>

@@ -11,9 +11,9 @@ const DEMOS = [
 ];
 
 const STEPS = [
-  ['01', 'Devis', 'Rédiger, envoyer, relancer.'],
-  ['02', 'Projets', 'Suivre ce qui est accepté.'],
-  ['03', 'Factures', 'Encaisser sans perdre le fil.'],
+  ['Devis', 'Rédiger, envoyer, relancer.'],
+  ['Projets', 'Suivre ce qui est accepté.'],
+  ['Factures', 'Encaisser sans perdre le fil.'],
 ];
 
 export default function Login() {
@@ -40,20 +40,19 @@ export default function Login() {
   }
 
   return (
-    <main className="mkt-page mkt-auth">
+    <main className="pg pg-auth">
       <div>
-        <p className="kicker">Espace client</p>
+        <p>Espace client</p>
         <h1>Entrer dans l’atelier</h1>
-        <p className="mkt-lead">Clients, devis, factures et projets dans le même geste — de la première proposition à l’encaissement.</p>
-        <ol className="mkt-auth-steps">
-          {STEPS.map(([index, title, text]) => (
-            <li key={index}>
-              <b>{index}</b>
-              <span>{title}</span>
-              <small>{text}</small>
+        <p className="pg-lead">Clients, devis, factures et projets dans le même geste, de la première proposition à l’encaissement.</p>
+        <ul className="pg-auth-points">
+          {STEPS.map(([title, text]) => (
+            <li key={title}>
+              <strong>{title}</strong>
+              <span>{text}</span>
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
       <form className="mkt-auth-card" onSubmit={submit}>
         <h2>Connexion</h2>

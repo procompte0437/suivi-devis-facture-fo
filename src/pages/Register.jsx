@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { errorText } from '../api';
 import { useAuth } from '../auth';
 import { Banner, Field, Loading } from '../components/ui';
@@ -18,6 +18,7 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const activite = useSearchParams()[0].get('activite');
 
   if (!ready) return <Loading inline />;
   if (user) return <Navigate to="/tableau" replace />;
@@ -39,11 +40,12 @@ export default function Register() {
   }
 
   return (
-    <main className="mkt-page mkt-auth">
+    <main className="pg pg-auth">
       <div>
-        <p className="kicker">Inscription</p>
+        <p>Inscription</p>
         <h1>Créer un compte</h1>
-        <p className="mkt-lead">Un compte personne ou entreprise, puis autant de maisons que l’activité en demande. Chacune tient ses devis, ses factures et ses projets.</p>
+        <p className="pg-lead">Un compte personne ou entreprise, puis autant de maisons que l’activité en demande. Chacune tient ses devis, ses factures et ses projets.</p>
+        {activite ? <p className="pg-lead">Activité indiquée : {activite}.</p> : null}
       </div>
       <form className="mkt-auth-card" onSubmit={submit}>
         <h2>Nouvel espace</h2>

@@ -97,8 +97,8 @@ export default function Shell() {
         <div className="brand-lockup">
           <Mark />
           <div>
-            <strong>Orée</strong>
-            <span>Atelier commercial</span>
+            <strong>DOUKOU</strong>
+            <span>Suivre</span>
           </div>
         </div>
         {groups.map((group) => (
