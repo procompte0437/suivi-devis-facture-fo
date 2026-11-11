@@ -8,10 +8,12 @@ export function AuthProvider({ children }) {
   const [settings, setSettings] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
+  const [abilities, setAbilities] = useState([]);
   const [ready, setReady] = useState(false);
 
   function apply(data) {
     setUser(data.user);
+    setAbilities(data.abilities || []);
     setSettings(data.settings);
     setCompanies(data.companies || []);
     const saved = localStorage.getItem('oree_company');
@@ -38,6 +40,9 @@ export function AuthProvider({ children }) {
     companies,
     company,
     ready,
+    isClient: user?.role === 'client',
+    isManager: ['admin', 'dirigeant'].includes(user?.role),
+    can: (ability) => abilities.includes(ability),
     async login(email, password) {
       const data = await api('/login', { method: 'POST', body: { email, password } });
       setToken(data.token);
@@ -68,8 +73,9 @@ export function AuthProvider({ children }) {
       setUser(null);
       setCompany(null);
       setCompanies([]);
+      setAbilities([]);
     },
-  }), [user, settings, companies, company, ready]);
+  }), [user, settings, companies, company, ready, abilities]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

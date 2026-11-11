@@ -2,16 +2,22 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorText } from '../api';
 import { useAuth } from '../auth';
-import { dateInput, todayISO, UNITS } from '../format';
+import { dateInput, formatDate, money, ROLES, todayISO, UNITS } from '../format';
 import { Paper } from '../components/Paper';
 import { QUOTE_TEMPLATES } from '../templates';
-import { Banner, Field, Loading } from '../components/ui';
+import { Banner, Field, Loading, Modal } from '../components/ui';
 
 const SUGGESTIONS = [
   ['Direction de création', 'j', 180000],
   ['Journée de production', 'j', 220000],
   ['Forfait de cadrage', 'forfait', 750000],
 ];
+
+const DECISION_TITLES = {
+  envoye: 'Marquer ce devis comme envoyé ?',
+  accepte: 'Enregistrer l’accord du client ?',
+  refuse: 'Enregistrer le refus du client ?',
+};
 
 function blankLine() {
   return { designation: '', detail: '', quantity: 1, unit: 'u', unit_price: '' };
@@ -21,7 +27,10 @@ export default function QuoteStudio() {
   const { id } = useParams();
   const isNew = !id || id === 'nouveau';
   const navigate = useNavigate();
-  const { settings } = useAuth();
+  const { settings, can } = useAuth();
+  const canWrite = can('quotes');
+  const canInvoice = can('quotes.convert');
+  const [decision, setDecision] = useState(null);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [quote, setQuote] = useState(null);
@@ -117,8 +126,24 @@ export default function QuoteStudio() {
     }
   }
 
+  async function decide() {
+    setPending(true);
+    setError('');
+    try {
+      const saved = await api(`/quotes/${id}/status`, { method: 'POST', body: { status: decision } });
+      setForm({ ...form, status: saved.status });
+      setNotice({ envoye: 'Devis marqué comme envoyé.', accepte: 'Devis accepté.', refuse: 'Devis refusé.' }[decision]);
+      setDecision(null);
+      setQuote(await api(`/quotes/${id}`));
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function convert() {
-    const saved = await save();
+    const saved = canWrite ? await save() : quote;
     if (!saved) return;
     setPending(true);
     setError('');
@@ -143,46 +168,77 @@ export default function QuoteStudio() {
     }
   }
 
-  if (!ready) return <Loading inline label="Préparation du devis" />;
+  if (!ready) return <Loading inline label="Chargement du devis" />;
 
   return (
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker"><Link to="/devis">Devis</Link> · atelier</p>
+          <p className="kicker"><Link to="/devis">Devis</Link></p>
           <h1>{quote?.number || 'Nouveau devis'}</h1>
         </div>
         <div className="actions">
           <button className="btn" type="button" onClick={() => window.print()}>Imprimer</button>
-          {quote?.status === 'brouillon' ? (
+          {canWrite && quote?.status === 'brouillon' ? (
             <button className="btn btn-danger" type="button" onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}>
               {confirmDelete ? 'Confirmer' : 'Supprimer'}
             </button>
           ) : null}
-          {quote && quote.status !== 'refuse' && !quote.invoice ? (
-            <button className="btn btn-brass" type="button" onClick={() => setConvertOpen((value) => !value)}>Facturer</button>
+          {canWrite && quote?.status === 'brouillon' ? (
+            <button className="btn" type="button" onClick={() => setDecision('envoye')}>Marquer envoyé</button>
+          ) : null}
+          {canWrite && quote?.display_status === 'envoye' ? (
+            <>
+              <button className="btn btn-danger" type="button" onClick={() => setDecision('refuse')}>Refuser</button>
+              <button className="btn" type="button" onClick={() => setDecision('accepte')}>Accepter</button>
+            </>
+          ) : null}
+          {canInvoice && quote?.status === 'accepte' && !quote.invoice ? (
+            <button className="btn btn-brass" type="button" onClick={() => setConvertOpen((value) => !value)}>Générer la facture</button>
           ) : null}
           {quote?.invoice ? <Link className="btn" to={`/factures/${quote.invoice.id}`}>{quote.invoice.number}</Link> : null}
-          <button className="btn btn-primary" type="button" disabled={pending} onClick={() => save()}>
-            {pending ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          {canWrite ? (
+            <button className="btn btn-primary" type="button" disabled={pending} onClick={() => save()}>
+              {pending ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          ) : null}
         </div>
       </header>
       <div className="stack" style={{ marginBottom: 12 }}>
         <Banner>{error}</Banner>
         <Banner tone="ok">{notice}</Banner>
+        {quote?.decided_at && ['accepte', 'refuse'].includes(quote.status) ? (
+          <p className="muted">
+            {quote.status === 'accepte' ? 'Accepté' : 'Refusé'} le {formatDate(quote.decided_at)}
+            {quote.decider ? ` par ${quote.decider.name} (${ROLES[quote.decider.role] || quote.decider.role})` : ''}
+            {quote.decision_note ? ` — « ${quote.decision_note} »` : ''}
+          </p>
+        ) : null}
+        {!canWrite ? <p className="muted">Lecture seule : les devis sont modifiés par le responsable commercial.</p> : null}
         {convertOpen ? (
           <div className="card" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
             <label className="check-row" style={{ border: 0 }}>
               <input type="checkbox" checked={createProject} onChange={(event) => setCreateProject(event.target.checked)} disabled={Boolean(form.project_id)} />
               Ouvrir un projet si le devis n’en a pas
             </label>
-            <button className="btn btn-brass" type="button" onClick={convert}>Créer la facture</button>
+            <button className="btn btn-brass" type="button" disabled={pending} onClick={convert}>Créer la facture</button>
           </div>
+        ) : null}
+        {decision ? (
+          <Modal title={DECISION_TITLES[decision]} onClose={() => setDecision(null)}>
+            <div className="stack">
+              <p>{quote?.number} · {quote?.title} · <b>{money(quote?.total, settings?.currency)}</b></p>
+              <p className="muted">La date et votre nom sont conservés avec la décision.</p>
+              <div className="actions">
+                <button className="btn" type="button" onClick={() => setDecision(null)}>Annuler</button>
+                <button className={`btn ${decision === 'refuse' ? 'btn-danger' : 'btn-primary'}`} type="button" disabled={pending} onClick={decide}>Confirmer</button>
+              </div>
+            </div>
+          </Modal>
         ) : null}
       </div>
       <div className="studio">
-        <div className="editor">
+        <fieldset className="editor" disabled={!canWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
           <div className="card fields">
             <Field label="Client">
               <select value={form.client_id} onChange={(event) => setForm({ ...form, client_id: event.target.value, project_id: '' })} required>
@@ -245,7 +301,7 @@ export default function QuoteStudio() {
             </div>
             <button className="btn btn-tiny" type="button" style={{ marginTop: 10 }} onClick={() => setLines([...lines, blankLine()])}>Ajouter une ligne</button>
           </div>
-        </div>
+        </fieldset>
         <div className="sheet-wrap">
           <Paper
             kind="devis"

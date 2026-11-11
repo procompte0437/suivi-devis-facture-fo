@@ -9,7 +9,7 @@ const FILTERS = [['', 'Tous'], ['brouillon', 'Brouillons'], ['envoye', 'Envoyés
 
 export default function Quotes() {
   const navigate = useNavigate();
-  const { settings } = useAuth();
+  const { settings, can } = useAuth();
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
@@ -30,9 +30,9 @@ export default function Quotes() {
         <div>
           <p className="kicker">Relation</p>
           <h1>Devis</h1>
-          <p className="lead">L’atelier où une proposition devient un document vivant.</p>
+          <p className="lead">Création, envoi et suivi des propositions commerciales.</p>
         </div>
-        <Link className="btn btn-primary" to="/devis/nouveau">Nouveau devis</Link>
+        {can('quotes') ? <Link className="btn btn-primary" to="/devis/nouveau">Nouveau devis</Link> : null}
       </header>
       <Banner>{error}</Banner>
       <div className="filters">

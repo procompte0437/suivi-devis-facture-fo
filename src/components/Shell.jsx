@@ -8,17 +8,17 @@ import { Icon } from './ui';
 const NAV = [
   { to: '/tableau', label: 'Tableau de bord', group: 'Pilotage', icon: 'board', end: true },
   { to: '/statistiques', label: 'Statistiques', group: 'Pilotage', icon: 'board' },
-  { to: '/clients', label: 'Clients', group: 'Relation', icon: 'people' },
-  { to: '/devis', label: 'Devis', group: 'Relation', icon: 'doc' },
-  { to: '/factures', label: 'Factures', group: 'Relation', icon: 'bill' },
-  { to: '/projets', label: 'Projets', group: 'Relation', icon: 'layers' },
-  { to: '/personnel', label: 'Personnel', group: 'Maison', icon: 'people' },
-  { to: '/entreprises', label: 'Entreprises', group: 'Maison', icon: 'layers' },
-  { to: '/admin', label: 'Administration', group: 'Maison', icon: 'key', admin: true },
+  { to: '/clients', label: 'Clients', group: 'Gestion', icon: 'people' },
+  { to: '/devis', label: 'Devis', group: 'Gestion', icon: 'doc' },
+  { to: '/factures', label: 'Factures', group: 'Gestion', icon: 'bill' },
+  { to: '/projets', label: 'Projets', group: 'Gestion', icon: 'layers' },
+  { to: '/personnel', label: 'Personnel', group: 'Entreprise', icon: 'people' },
+  { to: '/entreprises', label: 'Entreprises', group: 'Entreprise', icon: 'layers', admin: true },
+  { to: '/admin', label: 'Administration', group: 'Entreprise', icon: 'key', admin: true },
 ];
 
 export default function Shell() {
-  const { user, logout, company, companies, switchCompany } = useAuth();
+  const { user, logout, company, companies, switchCompany, isManager } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('oree_nav') === 'closed');
   const [drawer, setDrawer] = useState(false);
@@ -27,7 +27,7 @@ export default function Shell() {
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState(null);
 
-  const links = NAV.filter((item) => !item.admin || user?.role === 'admin');
+  const links = NAV.filter((item) => !item.admin || isManager);
   const groups = useMemo(() => {
     const order = [];
     links.forEach((item) => {
@@ -121,7 +121,7 @@ export default function Shell() {
             <strong>{user?.name}</strong>
             <small>{ROLES[user?.role] || user?.role}</small>
           </div>
-          <button className="icon-btn" type="button" title="Quitter" onClick={logout}>↪</button>
+          <button className="icon-btn" type="button" title="Se déconnecter" aria-label="Se déconnecter" onClick={logout}>↪</button>
         </div>
       </aside>
       <div className="workspace">
@@ -138,7 +138,7 @@ export default function Shell() {
                 <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
               </svg>
             </button>
-            <span className="eyebrow">Pilotage commercial — devis, factures et projets</span>
+            <span className="eyebrow">{ROLES[user?.role] || 'Espace équipe'}</span>
             {companies?.length ? (
               <select
                 className="company-switch"

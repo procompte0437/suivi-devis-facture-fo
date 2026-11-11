@@ -18,7 +18,7 @@ export default function Companies() {
     if (company) setForm({ ...EMPTY, ...company });
   }, [company]);
 
-  if (!companies) return <Loading inline label="Lecture des entreprises" />;
+  if (!companies) return <Loading inline label="Chargement des entreprises" />;
 
   function set(key, value) {
     setForm({ ...form, [key]: value });
@@ -48,7 +48,7 @@ export default function Companies() {
         <div>
           <p className="kicker">Espace</p>
           <h1>Entreprises</h1>
-          <p className="lead">Chaque entreprise a ses clients, ses pièces et ses projets.</p>
+          <p className="lead">Chaque entreprise a ses propres clients, documents et projets.</p>
         </div>
         <button className="btn" type="button" onClick={() => setForm(EMPTY)}>Nouvelle entreprise</button>
       </header>
@@ -75,7 +75,7 @@ export default function Companies() {
         <Field label="Capital"><input value={form.capital || ''} onChange={(event) => set('capital', event.target.value)} /></Field>
         <Field label="IBAN" wide><input value={form.iban || ''} onChange={(event) => set('iban', event.target.value)} /></Field>
         <Field label="Règlement" wide><textarea value={form.payment_note || ''} onChange={(event) => set('payment_note', event.target.value)} /></Field>
-        <Field label="Pied de pièce" wide><textarea value={form.footer || ''} onChange={(event) => set('footer', event.target.value)} /></Field>
+        <Field label="Pied de page des documents" wide><textarea value={form.footer || ''} onChange={(event) => set('footer', event.target.value)} /></Field>
         <button className="btn btn-primary" type="submit">{form.id ? 'Enregistrer' : 'Créer l’entreprise'}</button>
       </form>
     </div>

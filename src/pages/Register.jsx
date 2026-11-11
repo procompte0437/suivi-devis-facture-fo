@@ -44,7 +44,7 @@ export default function Register() {
       <div>
         <p>Inscription</p>
         <h1>Créer un compte</h1>
-        <p className="pg-lead">Un compte personne ou entreprise, puis autant de maisons que l’activité en demande. Chacune tient ses devis, ses factures et ses projets.</p>
+        <p className="pg-lead">Compte individuel ou compte d’entreprise. Vous pourrez ensuite ajouter d’autres entreprises, chacune avec ses propres clients, devis, factures et projets.</p>
         {activite ? <p className="pg-lead">Activité indiquée : {activite}.</p> : null}
       </div>
       <form className="mkt-auth-card" onSubmit={submit}>

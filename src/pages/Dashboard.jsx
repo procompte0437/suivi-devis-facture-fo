@@ -16,7 +16,7 @@ export default function Dashboard() {
   }, []);
 
   if (error) return <div className="page"><Banner>{error}</Banner></div>;
-  if (!data) return <Loading inline label="Lecture du tableau de bord" />;
+  if (!data) return <Loading inline label="Chargement du tableau de bord" />;
 
   const first = user?.name?.split(' ')[0] || '';
   const hour = new Date().getHours();
@@ -30,7 +30,7 @@ export default function Dashboard() {
         <div>
           <p className="kicker">Tableau de bord — DOUKOU</p>
           <h1>{hello}, {first}.</h1>
-          <p className="lead">Voici ce que l’atelier a en mouvement ce mois-ci.</p>
+          <p className="lead">Situation du mois en cours.</p>
         </div>
       </header>
 
@@ -53,7 +53,7 @@ export default function Dashboard() {
       <section className="dashboard-grid">
         <article className="card flow">
           <h2>Mouvement du mois</h2>
-          <p className="sub">Synthèse de l’atelier — créations, décisions, retards.</p>
+          <p className="sub">Devis créés et acceptés, factures en retard.</p>
           <div className="flow-hero">
             <Link to="/devis" className="flow-block green">
               <span>Créations</span>
@@ -76,7 +76,7 @@ export default function Dashboard() {
 
         <article className="card">
           <h2>Six mois</h2>
-          <p className="sub">Facturation hors pièces annulées.</p>
+          <p className="sub">Montant facturé par mois, hors factures annulées.</p>
           <svg className="spark" viewBox="0 0 280 86" role="img" aria-label="Facturation des six derniers mois">
             <path d={sparkPath(data.spark, maxSpark)} />
             {data.spark.map((point, index) => {
@@ -139,8 +139,8 @@ export default function Dashboard() {
 
       <section className="dashboard-grid">
         <article className="card">
-          <h2>Projets vivants</h2>
-          <p className="sub">Avancement des dossiers ouverts.</p>
+          <h2>Projets en cours</h2>
+          <p className="sub">Avancement des projets non clôturés.</p>
           {data.projects.map((project) => (
             <Link className="quiet-row" key={project.id} to={`/projets/${project.id}`}>
               <span>
@@ -154,13 +154,13 @@ export default function Dashboard() {
         </article>
         <article className="card">
           <h2>Journal</h2>
-          <p className="sub">Les derniers gestes de l’équipe.</p>
+          <p className="sub">Dernières opérations enregistrées.</p>
           <div className="timeline">
             {data.activity.map((item) => (
               <article key={item.id}>
                 <span className="dot" />
                 <div className="quiet-row" style={{ border: 0, paddingTop: 0 }}>
-                  <span>{item.description}<br /><small className="muted">{item.user?.name || 'Atelier'} · {formatDate(item.created_at)}</small></span>
+                  <span>{item.description}<br /><small className="muted">{item.user?.name || 'Système'} · {formatDate(item.created_at)}</small></span>
                 </div>
               </article>
             ))}

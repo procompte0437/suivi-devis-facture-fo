@@ -15,7 +15,8 @@ export default function InvoiceStudio() {
   const { id } = useParams();
   const isNew = !id || id === 'nouvelle';
   const navigate = useNavigate();
-  const { settings } = useAuth();
+  const { settings, can } = useAuth();
+  const canWrite = can('invoices');
   const currency = settings?.currency || 'XAF';
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -70,7 +71,8 @@ export default function InvoiceStudio() {
 
   const client = clients.find((item) => String(item.id) === String(form.client_id)) || invoice?.client;
   const clientProjects = projects.filter((item) => String(item.client_id) === String(form.client_id));
-  const locked = Boolean(invoice?.payments?.length);
+  const paid = Boolean(invoice?.payments?.length);
+  const locked = paid || !canWrite;
 
   function updateLine(index, key, value) {
     setLines(lines.map((line, lineIndex) => (lineIndex === index ? { ...line, [key]: value } : line)));
@@ -138,21 +140,23 @@ export default function InvoiceStudio() {
     }
   }
 
-  if (!ready) return <Loading inline label="Préparation de la facture" />;
+  if (!ready) return <Loading inline label="Chargement de la facture" />;
 
   return (
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker"><Link to="/factures">Factures</Link> · pièce</p>
+          <p className="kicker"><Link to="/factures">Factures</Link></p>
           <h1>{invoice?.number || 'Nouvelle facture'}</h1>
         </div>
         <div className="actions">
           <button className="btn" type="button" onClick={() => window.print()}>Imprimer</button>
-          {invoice?.status === 'brouillon' ? <button className="btn btn-brass" type="button" onClick={emit}>Émettre</button> : null}
-          <button className="btn btn-primary" type="button" disabled={pending || locked} onClick={() => save()}>
-            {locked ? 'Figée après règlement' : pending ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          {canWrite && invoice?.status === 'brouillon' ? <button className="btn btn-brass" type="button" onClick={emit}>Émettre</button> : null}
+          {canWrite ? (
+            <button className="btn btn-primary" type="button" disabled={pending || locked} onClick={() => save()}>
+              {paid ? 'Figée après paiement' : pending ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          ) : <span className="muted">Lecture seule</span>}
         </div>
       </header>
       <div className="stack" style={{ marginBottom: 12 }}>
@@ -210,7 +214,7 @@ export default function InvoiceStudio() {
           </div>
           {invoice && invoice.status !== 'brouillon' && invoice.status !== 'annulee' ? (
             <form className="card pay-box" onSubmit={pay}>
-              <h3>Encaissement</h3>
+              <h3>Paiements</h3>
               <p className="muted">Solde {money(invoice.balance, currency)} · déjà reçu {money(invoice.amount_paid, currency)}</p>
               <div className="fields">
                 <Field label="Montant"><input type="number" min="0" value={payment.amount} onChange={(event) => setPayment({ ...payment, amount: event.target.value })} required /></Field>
@@ -222,7 +226,7 @@ export default function InvoiceStudio() {
                 </Field>
                 <Field label="Référence"><input value={payment.reference} onChange={(event) => setPayment({ ...payment, reference: event.target.value })} /></Field>
               </div>
-              <button className="btn btn-primary" type="submit" disabled={!invoice.balance}>Enregistrer le règlement</button>
+              {canWrite ? <button className="btn btn-primary" type="submit" disabled={!invoice.balance}>Enregistrer le paiement</button> : null}
               <div className="link-list">
                 {invoice.payments?.map((item) => (
                   <div key={item.id} className="quiet-row">

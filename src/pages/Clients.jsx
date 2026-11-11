@@ -10,7 +10,7 @@ const EMPTY = { company: '', contact_name: '', email: '', phone: '', address: ''
 export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { settings } = useAuth();
+  const { settings, can } = useAuth();
   const currency = settings?.currency || 'XAF';
   const [rows, setRows] = useState([]);
   const [detail, setDetail] = useState(null);
@@ -65,11 +65,11 @@ export default function Clients() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Relation</p>
+          <p className="kicker">Gestion</p>
           <h1>Clients</h1>
-          <p className="lead">Chaque dossier rassemble devis, factures et projets.</p>
+          <p className="lead">Fiches clients, avec leurs devis, factures et projets.</p>
         </div>
-        <button className="btn btn-primary" type="button" onClick={() => edit(null)}>Nouveau client</button>
+        {can('clients') ? <button className="btn btn-primary" type="button" onClick={() => edit(null)}>Nouveau client</button> : null}
       </header>
       <Banner>{error}</Banner>
       <div className="directory-layout" style={{ marginTop: 14 }}>
@@ -92,7 +92,7 @@ export default function Clients() {
           ))}
         </aside>
         <section className="dossier">
-          {!client ? <p className="lead">Choisissez un dossier, ou ouvrez-en un nouveau.</p> : (
+          {!client ? <p className="lead">Sélectionnez un client dans la liste.</p> : (
             <>
               <div className="dossier-top">
                 <div style={{ display: 'flex', gap: 14 }}>

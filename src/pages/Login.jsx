@@ -5,26 +5,28 @@ import { useAuth } from '../auth';
 import { Banner, Field, Loading } from '../components/ui';
 
 const DEMOS = [
-  ['Aurore Blanc', 'aurore.blanc@oree.fr', 'Administration'],
+  ['Aurore Blanc', 'aurore.blanc@oree.fr', 'Administrateur'],
   ['Marc Essono', 'marc.essono@oree.fr', 'Commercial'],
-  ['Léa Nguema', 'lea.nguema@oree.fr', 'Comptabilité'],
+  ['Léa Nguema', 'lea.nguema@oree.fr', 'Comptable'],
+  ['Yannick Ondo', 'yannick.ondo@oree.fr', 'Chef de projet'],
+  ['Hervé Mba', 'direction@flamboyants.ga', 'Client'],
 ];
 
 const STEPS = [
-  ['Devis', 'Rédiger, envoyer, relancer.'],
-  ['Projets', 'Suivre ce qui est accepté.'],
-  ['Factures', 'Encaisser sans perdre le fil.'],
+  ['Devis', 'Rédiger, envoyer, faire valider.'],
+  ['Projets', 'Suivre les étapes et l’avancement.'],
+  ['Factures', 'Enregistrer les paiements et le solde.'],
 ];
 
 export default function Login() {
-  const { user, ready, login } = useAuth();
+  const { user, ready, login, isClient } = useAuth();
   const [email, setEmail] = useState('aurore.blanc@oree.fr');
   const [password, setPassword] = useState('Cedre2026!');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
   if (!ready) return <Loading inline />;
-  if (user) return <Navigate to="/tableau" replace />;
+  if (user) return <Navigate to={isClient ? '/espace-client' : '/tableau'} replace />;
 
   async function submit(event) {
     event.preventDefault();
@@ -42,9 +44,9 @@ export default function Login() {
   return (
     <main className="pg pg-auth">
       <div>
-        <p>Espace client</p>
-        <h1>Entrer dans l’atelier</h1>
-        <p className="pg-lead">Clients, devis, factures et projets dans le même geste, de la première proposition à l’encaissement.</p>
+        <p>Connexion</p>
+        <h1>Accéder au portail</h1>
+        <p className="pg-lead">L’équipe y gère les clients, les devis, les factures et les projets. Les clients y consultent leurs documents et l’avancement de leurs projets.</p>
         <ul className="pg-auth-points">
           {STEPS.map(([title, text]) => (
             <li key={title}>
@@ -56,7 +58,7 @@ export default function Login() {
       </div>
       <form className="mkt-auth-card" onSubmit={submit}>
         <h2>Connexion</h2>
-        <p>Le mot de passe de démonstration est commun aux trois comptes.</p>
+        <p>Comptes de démonstration : mot de passe <code>Cedre2026!</code> pour tous.</p>
         <Banner>{error}</Banner>
         <Field label="E-mail">
           <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="username" />
@@ -65,7 +67,7 @@ export default function Login() {
           <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
         </Field>
         <button className="mkt-cta" type="submit" disabled={pending}>
-          {pending ? 'Ouverture…' : 'Entrer dans l’atelier'}
+          {pending ? 'Connexion…' : 'Se connecter'}
         </button>
         <div className="gate-demos">
           <span>Comptes de démonstration</span>
@@ -81,7 +83,7 @@ export default function Login() {
             </button>
           ))}
         </div>
-        <p className="muted">Pas encore de compte ? <Link to="/inscription">Créer un accès</Link></p>
+        <p className="muted">Pas encore de compte ? <Link to="/inscription">Créer un compte</Link></p>
       </form>
     </main>
   );

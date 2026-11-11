@@ -25,7 +25,7 @@ export default function Stats() {
         <div>
           <p className="kicker">Pilotage</p>
           <h1>Statistiques</h1>
-          <p className="lead">La lecture du mois, des devis ouverts aux projets vivants.</p>
+          <p className="lead">Indicateurs du mois : devis, facturation, paiements et projets.</p>
         </div>
       </header>
       <section className="grid-kpis">
@@ -39,7 +39,7 @@ export default function Stats() {
       </section>
       <section className="card" style={{ marginTop: 16 }}>
         <h2>Pipeline des devis</h2>
-        <p className="sub">{quotes} pièces dans le cycle.</p>
+        <p className="sub">{quotes} devis au total.</p>
         {data.pipeline.map((item) => (
           <div className="pipe" key={item.status}>
             <span>{item.status}</span>

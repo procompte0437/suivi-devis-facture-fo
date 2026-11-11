@@ -30,9 +30,12 @@ export const CLIENT_STATUS = {
 };
 
 export const ROLES = {
-  admin: 'Administration',
-  commercial: 'Commercial',
-  comptable: 'Comptabilité',
+  admin: 'Administrateur',
+  dirigeant: 'Dirigeant',
+  commercial: 'Responsable commercial',
+  comptable: 'Comptable',
+  chef_projet: 'Chef de projet',
+  client: 'Client',
 };
 
 export const METHODS = [

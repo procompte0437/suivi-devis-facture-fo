@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { api } from '../api';
 import '../site.css';
 
 export { Home } from './Landing';
@@ -10,21 +9,21 @@ const MENUS = [
     label: 'Fonctionnalités',
     to: '/fonctionnalites',
     items: [
-      ['Devis & factures', 'Cinq modèles, une pièce à l’image de la maison.', '/fonctionnalites#facturation'],
-      ['Projets & Gantt', 'Dates, tâches par personne, planning vivant.', '/fonctionnalites#projets'],
-      ['Budget', 'Prévu, dépensé, reste à tenir.', '/fonctionnalites#budget'],
-      ['Équipe', 'Le personnel qui porte les tâches.', '/fonctionnalites#relances'],
-      ['Pilotage', 'Devis ouverts, encaissé, projets vivants.', '/fonctionnalites#pilotage'],
+      ['Devis & factures', 'Cinq modèles de chaque, impression et PDF.', '/fonctionnalites#facturation'],
+      ['Projets & Gantt', 'Étapes, tâches assignées, avancement.', '/fonctionnalites#projets'],
+      ['Budget', 'Montants prévus et dépensés par poste.', '/fonctionnalites#budget'],
+      ['Paiements', 'Échéances, paiements et reste à payer.', '/fonctionnalites#relances'],
+      ['Tableau de bord', 'Indicateurs du mois.', '/fonctionnalites#pilotage'],
     ],
   },
   {
     label: 'Secteurs',
     to: '/secteurs',
     items: [
-      ['Ateliers & artisans', 'De la proposition au chantier.', '/secteurs#ateliers'],
-      ['Agences', 'Plusieurs clients, une maison claire.', '/secteurs#agences'],
-      ['BTP & chantiers', 'Lots, jalons, budget de mission.', '/secteurs#btp'],
-      ['Indépendants', 'Un compte personne, puis des entreprises.', '/secteurs#independants'],
+      ['Artisans', 'Du devis à la fin du chantier.', '/secteurs#ateliers'],
+      ['Agences et bureaux', 'Plusieurs clients suivis en parallèle.', '/secteurs#agences'],
+      ['BTP & chantiers', 'Étapes, budget et planning.', '/secteurs#btp'],
+      ['Indépendants', 'Un compte individuel, une ou plusieurs entreprises.', '/secteurs#independants'],
     ],
   },
 ];
@@ -46,7 +45,7 @@ const RAILS = [
     tone: 'blue',
     kicker: 'Planning',
     title: 'Dates, personnes, avancement',
-    text: 'Renseignez le début, la fin visée et les tâches par personne. Le planning se trace dans la fiche, avec l’avancement et la ligne du jour. Jalons, pièces liées et équipe restent dans le même geste.',
+    text: 'Renseignez les dates prévues, les étapes et les tâches de chaque personne. Le diagramme de Gantt se construit à partir de ces dates. Le chef de projet publie l’avancement avec un commentaire, visible par le client.',
     mock: 'gantt',
   },
   {
@@ -55,16 +54,16 @@ const RAILS = [
     tone: 'purple',
     kicker: 'Postes',
     title: 'Prévu et engagé',
-    text: 'Chaque mission a ses postes. Vous voyez ce qui était prévu, ce qui est déjà engagé, et ce qu’il reste avant la livraison. Le budget du projet parle le même langage que les factures.',
+    text: 'Chaque projet a ses postes de dépense, avec un montant prévu et un montant dépensé. Les devis et factures liés au projet sont affichés dans la même fiche.',
     mock: 'budget',
   },
   {
     id: 'relances',
     label: 'Échéances',
     tone: 'rose',
-    kicker: 'Encaissement',
-    title: 'Le solde après l’envoi',
-    text: 'Date d’échéance, statut, reste à encaisser : la facture ne disparaît pas après l’envoi. L’équipe sait qui relancer, et le client retrouve une pièce lisible.',
+    kicker: 'Paiements',
+    title: 'Suivre ce qui reste à payer',
+    text: 'Le comptable enregistre chaque paiement (montant, date, mode). Le reste à payer et le statut de la facture se mettent à jour. Les factures en retard apparaissent sur le tableau de bord.',
     mock: 'relance',
   },
   {
@@ -72,25 +71,19 @@ const RAILS = [
     label: 'Pilotage',
     tone: 'sand',
     kicker: 'Statistiques',
-    title: 'La lecture du mois',
-    text: 'Facturé du mois, encaissé, devis encore ouverts, projets vivants. La lecture tient sur une page, entreprise par entreprise, sans tableur à côté.',
+    title: 'Les indicateurs du mois',
+    text: 'Montant facturé, paiements reçus, devis en attente, projets en cours et factures en retard, entreprise par entreprise.',
     mock: 'dash',
   },
 ];
 
-const VOICES = [
-  ['Le devis part avec le bon modèle, et le projet garde les dates. On ne cherche plus la dernière version.', 'Direction d’atelier', 'Libreville'],
-  ['Les tâches ont un nom et une personne. Le planning se voit, au lieu de rester dans un cahier.', 'Conduite de chantier', 'Port-Gentil'],
-  ['La facture reprend le devis. La comptabilité n’a plus à recoller les lignes à la main.', 'Comptabilité', 'Maison de projets'],
-  ['Un compte, puis les entreprises dont on s’occupe. Chacune a ses clients, ses pièces, son équipe.', 'Indépendant', 'Plusieurs maisons'],
-];
-
 const FAQ = [
-  ['Qu’est-ce que DOUKOU ?', 'DOUKOU, « suivre » en nzebi, est l’espace où une personne ou une entreprise tient ses devis, ses factures et le suivi de ses projets. Chaque maison a ses clients, son personnel, son budget et ses statistiques.'],
-  ['Faut-il un compte pour regarder le site ?', 'Non. L’accueil, la vision, les secteurs et les conseils sont ouverts. Le chat répond aussi avant l’inscription. Le compte sert à créer ses entreprises et à tenir les pièces.'],
-  ['Comment choisir le modèle de devis ou de facture ?', 'Au moment de générer la pièce, cinq modèles sont proposés. Le papier reprend l’identité de l’entreprise active : nom, adresse, client, lignes et totaux.'],
+  ['Qu’est-ce que DOUKOU ?', 'Un portail web de gestion des devis, des factures et du suivi des projets clients. DOUKOU veut dire « suivre » en nzebi.'],
+  ['Faut-il un compte pour regarder le site ?', 'Non. Les pages de présentation sont publiques et le chat répond sans inscription. Le compte sert à gérer ses clients, ses devis et ses factures.'],
+  ['Comment choisir le modèle de devis ou de facture ?', 'Cinq modèles sont proposés dans l’écran du devis ou de la facture. Le document reprend les coordonnées de l’entreprise, du client, les lignes et les totaux.'],
+  ['Mes clients peuvent-ils se connecter ?', 'Oui. L’administrateur crée un compte client rattaché à la fiche du client. Le client consulte alors ses devis, ses factures et ses projets, et accepte ou refuse les devis envoyés.'],
   ['Le planning se construit comment ?', 'Sur la fiche projet : date de début, fin estimée, tâches assignées à une personne, avancement. Le diagramme de Gantt se dessine à partir de ces dates.'],
-  ['Une personne peut-elle gérer plusieurs entreprises ?', 'Oui. Le compte peut être personnel ou d’entreprise. Dans l’espace client, on crée d’autres entreprises et on passe de l’une à l’autre.'],
+  ['Une personne peut-elle gérer plusieurs entreprises ?', 'Oui. Depuis l’écran Entreprises, on en crée d’autres et on passe de l’une à l’autre avec le sélecteur en haut de page.'],
 ];
 
 export function SiteLayout() {
@@ -149,28 +142,28 @@ function SiteFooter() {
         <Link to="/" className="mkt-logo"><img src="/logo/logo-doukou-clair.png" alt="DOUKOU" /></Link>
         <div className="tx-foot-cols">
           <div>
-            <h2>Le dossier</h2>
+            <h2>Produit</h2>
             <Link to="/fonctionnalites">Fonctionnalités</Link>
             <Link to="/secteurs">Secteurs</Link>
             <Link to="/tarifs">Tarifs</Link>
             <Link to="/conseils">Conseils</Link>
           </div>
           <div>
-            <h2>L’espace</h2>
+            <h2>Accès</h2>
             <Link to="/inscription">Créer un compte</Link>
             <Link to="/login">Connexion</Link>
             <Link to="/demo">Démonstration</Link>
             <Link to="/login">Espace client</Link>
           </div>
           <div>
-            <h2>La société</h2>
+            <h2>Société</h2>
             <Link to="/vision">Vision</Link>
             <Link to="/a-propos">À propos</Link>
             <Link to="/conseils">Bonnes pratiques</Link>
             <Link to="/demo">Comptes de démo</Link>
           </div>
           <div>
-            <h2>Les pièces</h2>
+            <h2>Fonctions</h2>
             <Link to="/fonctionnalites#facturation">Devis et factures</Link>
             <Link to="/fonctionnalites#projets">Projets et Gantt</Link>
             <Link to="/fonctionnalites#budget">Budget</Link>
@@ -180,11 +173,11 @@ function SiteFooter() {
       </div>
       <p className="tx-foot-legal">DOUKOU · Devis, factures et projets · Libreville</p>
       <div className="tx-foot-geo">
-        <h2>Tenir un dossier, depuis ces villes</h2>
+        <h2>Villes</h2>
         <ul>
           {cities.map((city) => <li key={city}><Link to="/inscription">{city}</Link></li>)}
         </ul>
-        <h2>Les métiers du dossier</h2>
+        <h2>Métiers</h2>
         <ul>
           {trades.map((trade) => <li key={trade}><Link to="/secteurs">{trade}</Link></li>)}
         </ul>
@@ -198,7 +191,7 @@ function Rails() {
   const rail = RAILS.find((item) => item.id === open) ?? RAILS[0];
   return (
     <div className="mkt-studio">
-      <div className="mkt-studio-nav" role="tablist" aria-label="Ce que la maison gère">
+      <div className="mkt-studio-nav" role="tablist" aria-label="Fonctionnalités">
         {RAILS.map((item) => (
           <button
             key={item.id}
@@ -373,28 +366,28 @@ export function Features() {
     <main className="pg">
       <PageHero
         kicker="Fonctionnalités"
-        title="Les pièces, le planning et le solde."
-        lead="Tout tient dans l’entreprise choisie : le devis, la facture, les tâches, le budget et la lecture du mois."
+        title="Devis, factures, projets et paiements."
+        lead="Les modules du portail, avec les droits de chaque rôle."
       />
       <Rails />
-      <PageCta title="Prêt à ouvrir le dossier ?" to="/inscription" label="Créer un compte" />
+      <PageCta title="Essayer DOUKOU" to="/inscription" label="Créer un compte" />
     </main>
   );
 }
 
 export function Sectors() {
   const sectors = [
-    ['ateliers', '/home/metier-platre.jpg', 'Ateliers & artisans', 'Une proposition, des acomptes, un chantier qui a des dates. Le devis choisi devient la facture, et les tâches restent assignées.'],
-    ['agences', '/home/metier-peinture.jpg', 'Agences', 'Plusieurs clients, une identité par entreprise. Les statistiques lisent le mois sans mélanger les maisons.'],
-    ['btp', '/home/metier-plomberie.jpg', 'BTP & chantiers', 'Lots, jalons et budget. Le planning montre qui fait quoi entre le début et la fin visée.'],
-    ['independants', '/home/pro-chantier.jpg', 'Indépendants', 'Le compte personne ouvre l’espace. Chaque entreprise créée ensuite a ses clients, ses pièces et son équipe.'],
+    ['ateliers', '/home/metier-platre.jpg', 'Artisans', 'Un devis, un acompte, des travaux avec des dates. Le devis accepté devient la facture et les tâches sont assignées.'],
+    ['agences', '/home/metier-peinture.jpg', 'Agences et bureaux', 'Plusieurs clients suivis en parallèle. Chaque entreprise a ses propres statistiques.'],
+    ['btp', '/home/metier-plomberie.jpg', 'BTP & chantiers', 'Étapes, budget et planning. Le Gantt montre qui fait quoi entre le début et la fin prévue.'],
+    ['independants', '/home/pro-chantier.jpg', 'Indépendants', 'Un compte individuel suffit. Vous pouvez ensuite ajouter une ou plusieurs entreprises.'],
   ];
   return (
     <main className="pg">
       <PageHero
         kicker="Secteurs"
-        title="Pour les maisons qui vendent un travail précis."
-        lead="Atelier, agence, chantier ou activité indépendante : le dossier suit le même fil."
+        title="Pour les entreprises de services et de travaux."
+        lead="Artisans, agences, BTP ou indépendants."
       />
       <section className="pg-band">
         <div className="pg-photos">
@@ -404,29 +397,31 @@ export function Sectors() {
               <div>
                 <h2>{title}</h2>
                 <p>{text}</p>
-                <Link to="/inscription">Ouvrir un dossier</Link>
+                <Link to="/inscription">Créer un compte</Link>
               </div>
             </article>
           ))}
         </div>
       </section>
-      <PageCta title="Le métier est déjà le vôtre ?" to="/inscription" label="Créer un compte" />
+      <PageCta title="Essayer DOUKOU" to="/inscription" label="Créer un compte" />
     </main>
   );
 }
 
 export function Demo() {
   const accounts = [
-    ['Aurore Blanc', 'Administration', 'Entreprises, réglages et lecture d’ensemble.', 'aurore.blanc@oree.fr'],
-    ['Marc Essono', 'Commercial', 'Clients, devis et projets.', 'marc.essono@oree.fr'],
-    ['Léa Nguema', 'Comptabilité', 'Factures, échéances et encaissements.', 'lea.nguema@oree.fr'],
+    ['Aurore Blanc', 'Administrateur', 'Comptes utilisateurs, paramètres et accès à tous les modules.', 'aurore.blanc@oree.fr'],
+    ['Marc Essono', 'Responsable commercial', 'Clients et devis.', 'marc.essono@oree.fr'],
+    ['Léa Nguema', 'Comptable', 'Factures et paiements.', 'lea.nguema@oree.fr'],
+    ['Yannick Ondo', 'Chef de projet', 'Projets, étapes et avancement.', 'yannick.ondo@oree.fr'],
+    ['Hervé Mba', 'Client', 'Espace client de la Clinique Les Flamboyants.', 'direction@flamboyants.ga'],
   ];
   return (
     <main className="pg">
       <PageHero
         kicker="Démonstration"
-        title="Parcourez l’atelier déjà meublé."
-        lead="Trois comptes partagent la même maison de démonstration. Le mot de passe est indiqué sur la page de connexion."
+        title="Comptes de démonstration"
+        lead="Un compte par rôle, sur la même entreprise de démonstration. Mot de passe commun : Cedre2026!"
       />
       <section className="pg-band">
         <div className="pg-grid">
@@ -447,16 +442,16 @@ export function Demo() {
 
 export function Pricing() {
   const plans = [
-    ['Personne', 'Le compte individuel', 'Une première entreprise, ses devis, ses factures et ses projets.'],
-    ['Atelier', 'L’équipe sur le chantier', 'Les tâches, le planning et le budget de chaque mission.'],
-    ['Maison', 'Plusieurs entreprises', 'Les statistiques, et le passage d’une maison à l’autre.'],
+    ['Solo', 'Compte individuel', 'Une entreprise, ses clients, ses devis, ses factures et ses projets.'],
+    ['Équipe', 'Plusieurs utilisateurs', 'Comptes par rôle : commercial, comptable, chef de projet, clients.'],
+    ['Multi', 'Plusieurs entreprises', 'Plusieurs entreprises sous un même compte, avec un sélecteur.'],
   ];
   return (
     <main className="pg">
       <PageHero
         kicker="Tarifs"
-        title="L’essai est ouvert."
-        lead="Les formules décrivent l’usage. L’espace de démonstration se parcourt sans règlement."
+        title="Tarifs"
+        lead="Le portail est gratuit pendant la phase de test. Les formules ci-dessous sont indicatives."
       />
       <section className="pg-band">
         <div className="pg-grid">
@@ -477,16 +472,16 @@ export function Pricing() {
 
 export function Advice() {
   const notes = [
-    ['Choisir le modèle', 'Nomade pour une agence, Chantier pour un lot technique, Cèdre ou Iris pour une facture classique. Le modèle se choisit au moment de générer la pièce.'],
-    ['Lire le planning', 'Une tâche sans dates ne dessine pas de barre. Début, fin, personne : le planning apparaît, avec la ligne du jour.'],
-    ['Tenir le budget', 'Un poste a un prévu et un dépensé. La fiche projet les additionne à côté des factures liées.'],
+    ['Envoyer le devis avant de facturer', 'Un devis passe par brouillon, envoyé, puis accepté ou refusé. Seul un devis accepté peut être transformé en facture.'],
+    ['Dater les tâches', 'Une tâche sans date de début et de fin n’apparaît pas dans le Gantt.'],
+    ['Publier l’avancement régulièrement', 'Une mise à jour courte chaque semaine évite au client de devoir appeler pour savoir où en est son projet.'],
   ];
   return (
     <main className="pg">
       <PageHero
         kicker="Conseils & bonnes pratiques"
-        title="Trois gestes qui tiennent le fil."
-        lead="Le modèle, le planning et le budget se règlent dans la fiche, pas dans un autre cahier."
+        title="Quelques conseils d’utilisation."
+        lead="Pour tirer le meilleur parti du portail."
       />
       <section className="pg-block pg-bars">
         {notes.map(([title, text]) => (
@@ -497,23 +492,23 @@ export function Advice() {
         ))}
       </section>
       <Faq />
-      <PageCta title="Mettre ces gestes dans un dossier" to="/inscription" label="Créer un compte" />
+      <PageCta title="Essayer DOUKOU" to="/inscription" label="Créer un compte" />
     </main>
   );
 }
 
 export function Vision() {
   const points = [
-    ['Pour la personne', 'Un compte indépendant, puis autant d’entreprises que l’activité en demande.'],
-    ['Pour l’entreprise', 'Une identité sur les pièces, une équipe, des clients, des projets.'],
-    ['Pour le client', 'Un devis lisible, une facture choisie, un suivi qui ne se perd pas.'],
+    ['Moins de ressaisie', 'Le devis accepté devient la facture, sans recopier les lignes.'],
+    ['Des informations au même endroit', 'Clients, devis, factures, paiements et projets dans une seule base.'],
+    ['Un client plus autonome', 'Il consulte ses documents et l’avancement sans devoir appeler.'],
   ];
   return (
     <main className="pg">
       <PageHero
         kicker="Vision"
-        title="Une maison claire pour les chiffres d’un atelier."
-        lead="La proposition, la décision, le chantier et le règlement restent dans le même geste."
+        title="Pourquoi ce portail ?"
+        lead="Remplacer les fichiers Word et Excel dispersés par un outil commun."
       />
       <section className="pg-block pg-bars">
         {points.map(([title, text]) => (
@@ -523,7 +518,7 @@ export function Vision() {
           </article>
         ))}
       </section>
-      <PageCta title="Suivre, en nzebi : DOUKOU" to="/a-propos" label="À propos" />
+      <PageCta title="En savoir plus" to="/a-propos" label="À propos" />
     </main>
   );
 }
@@ -533,19 +528,19 @@ export function About() {
     <main className="pg">
       <PageHero
         kicker="À propos"
-        title="DOUKOU, à Libreville."
-        lead="DOUKOU veut dire suivre, en nzebi."
+        title="À propos de DOUKOU"
+        lead="DOUKOU veut dire « suivre » en nzebi."
       />
       <section className="pg-split">
         <img src="/home/bandeau-equipe.jpg" alt="Deux artisans dans un atelier, en extérieur" />
         <div>
-          <h2>Le dossier suit le travail.</h2>
-          <p>La plateforme sert les ateliers, les bureaux et les entreprises qui vendent un travail précis. Elle réunit la relation client, les pièces commerciales et le pilotage du projet.</p>
-          <p>Chaque maison garde ses clients, son personnel, ses devis, ses factures et ses dates.</p>
-          <Link to="/login">Entrer dans l’espace client</Link>
+          <h2>Le projet</h2>
+          <p>DOUKOU est un portail web de gestion des devis, des factures et du suivi des projets clients, réalisé dans le cadre d’un projet de stage à Libreville.</p>
+          <p>Il s’adresse aux petites entreprises de services et de travaux qui gèrent aujourd’hui ces informations dans plusieurs fichiers séparés.</p>
+          <Link to="/login">Se connecter</Link>
         </div>
       </section>
-      <PageCta title="Ouvrir le dossier maintenant" to="/inscription" label="Créer un compte" />
+      <PageCta title="Essayer DOUKOU" to="/inscription" label="Créer un compte" />
     </main>
   );
 }

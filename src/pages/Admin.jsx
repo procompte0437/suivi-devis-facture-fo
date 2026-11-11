@@ -4,12 +4,13 @@ import { useAuth } from '../auth';
 import { formatDate, ROLES } from '../format';
 import { Banner, Field, Loading, Modal, Pill } from '../components/ui';
 
-const EMPTY_USER = { name: '', email: '', password: '', role: 'commercial', phone: '', job_title: '', is_active: true };
+const EMPTY_USER = { name: '', email: '', password: '', role: 'commercial', client_id: '', phone: '', job_title: '', is_active: true };
 
 export default function Admin() {
-  const { user, settings, setSettings } = useAuth();
+  const { user, settings, setSettings, isManager } = useAuth();
   const [tab, setTab] = useState('equipe');
   const [users, setUsers] = useState([]);
+  const [clients, setClients] = useState([]);
   const [activity, setActivity] = useState([]);
   const [house, setHouse] = useState(settings);
   const [form, setForm] = useState(null);
@@ -18,41 +19,46 @@ export default function Admin() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (!isManager) {
       setReady(true);
       return;
     }
-    Promise.all([api('/admin/users'), api('/admin/activity'), api('/settings')])
-      .then(([team, journal, current]) => {
+    Promise.all([api('/admin/users'), api('/admin/activity'), api('/settings'), api('/clients')])
+      .then(([team, journal, current, clientList]) => {
         setUsers(team);
+        setClients(clientList);
         setActivity(journal);
         setHouse(current);
       })
       .catch((err) => setError(errorText(err)))
       .finally(() => setReady(true));
-  }, [user]);
+  }, [isManager]);
 
-  if (user?.role !== 'admin') {
+  if (!isManager) {
     return (
       <div className="page">
         <h1>Administration</h1>
-        <p className="lead">Cet espace est réservé à la direction de l’atelier.</p>
+        <p className="lead">Cet écran est réservé aux administrateurs.</p>
       </div>
     );
   }
-  if (!ready || !house) return <Loading inline label="Ouverture de la maison" />;
+  if (!ready || !house) return <Loading inline label="Chargement" />;
 
   async function saveUser(event) {
     event.preventDefault();
     setError('');
     try {
-      const payload = { ...form, is_active: Boolean(form.is_active) };
+      const payload = {
+        ...form,
+        is_active: Boolean(form.is_active),
+        client_id: form.role === 'client' && form.client_id ? Number(form.client_id) : null,
+      };
       if (!payload.password) delete payload.password;
       if (form.id) await api(`/admin/users/${form.id}`, { method: 'PUT', body: payload });
       else await api('/admin/users', { method: 'POST', body: payload });
       setUsers(await api('/admin/users'));
       setForm(null);
-      setNotice('Équipe mise à jour.');
+      setNotice('Compte enregistré.');
     } catch (err) {
       setError(errorText(err));
     }
@@ -60,6 +66,7 @@ export default function Admin() {
 
   async function removeUser(member) {
     setError('');
+    if (!window.confirm(`Retirer le compte de ${member.name} ?`)) return;
     try {
       await api(`/admin/users/${member.id}`, { method: 'DELETE' });
       setUsers(await api('/admin/users'));
@@ -75,7 +82,7 @@ export default function Admin() {
       const saved = await api('/admin/settings', { method: 'PUT', body: { ...house, tax_rate: Number(house.tax_rate) } });
       setHouse(saved);
       setSettings(saved);
-      setNotice('La maison est à jour. Les prochains documents en héritent.');
+      setNotice('Paramètres enregistrés. Ils s’appliquent aux prochains documents.');
     } catch (err) {
       setError(errorText(err));
     }
@@ -85,13 +92,13 @@ export default function Admin() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Maison</p>
+          <p className="kicker">Entreprise</p>
           <h1>Administration</h1>
-          <p className="lead">L’équipe, l’identité de l’atelier et la mémoire des gestes.</p>
+          <p className="lead">Comptes utilisateurs et droits d’accès, paramètres des documents, journal des opérations.</p>
         </div>
       </header>
       <div className="tabs">
-        {[['equipe', 'Équipe'], ['maison', 'Société'], ['journal', 'Journal']].map(([value, label]) => (
+        {[['equipe', 'Utilisateurs'], ['maison', 'Paramètres'], ['journal', 'Journal']].map(([value, label]) => (
           <button key={value} className={`chip${tab === value ? ' on' : ''}`} type="button" onClick={() => setTab(value)}>{label}</button>
         ))}
       </div>
@@ -103,8 +110,8 @@ export default function Admin() {
       {tab === 'equipe' ? (
         <div className="card table-wrap">
           <div className="actions" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-            <h2>Équipe</h2>
-            <button className="btn btn-primary btn-tiny" type="button" onClick={() => setForm({ ...EMPTY_USER })}>Inviter</button>
+            <h2>Utilisateurs</h2>
+            <button className="btn btn-primary btn-tiny" type="button" onClick={() => setForm({ ...EMPTY_USER })}>Nouveau compte</button>
           </div>
           <table>
             <thead><tr><th>Nom</th><th>Rôle</th><th>E-mail</th><th>Accès</th><th></th></tr></thead>
@@ -112,7 +119,7 @@ export default function Admin() {
               {users.map((member) => (
                 <tr key={member.id}>
                   <td>{member.name}<br /><small className="muted">{member.job_title}</small></td>
-                  <td>{ROLES[member.role]}</td>
+                  <td>{ROLES[member.role] || member.role}{member.client ? <><br /><small className="muted">{member.client.company}</small></> : null}</td>
                   <td>{member.email}</td>
                   <td><Pill status={member.is_active ? 'actif' : 'veille'} map={{ actif: { label: 'Actif', tone: 'ok' }, veille: { label: 'Inactif', tone: 'mute' } }} /></td>
                   <td className="actions">
@@ -129,7 +136,7 @@ export default function Admin() {
       {tab === 'maison' ? (
         <form className="studio" onSubmit={saveHouse}>
           <div className="card fields">
-            <Field label="Maison" wide><input value={house.company_name} onChange={(event) => setHouse({ ...house, company_name: event.target.value })} required /></Field>
+            <Field label="Raison sociale" wide><input value={house.company_name} onChange={(event) => setHouse({ ...house, company_name: event.target.value })} required /></Field>
             <Field label="Signature" wide><input value={house.tagline || ''} onChange={(event) => setHouse({ ...house, tagline: event.target.value })} /></Field>
             <Field label="Adresse"><input value={house.address || ''} onChange={(event) => setHouse({ ...house, address: event.target.value })} /></Field>
             <Field label="Ville"><input value={house.city || ''} onChange={(event) => setHouse({ ...house, city: event.target.value })} /></Field>
@@ -149,7 +156,7 @@ export default function Admin() {
             <Field label="Préfixe facture"><input value={house.invoice_prefix} onChange={(event) => setHouse({ ...house, invoice_prefix: event.target.value })} /></Field>
             <Field label="Modalités de règlement" wide><textarea value={house.payment_note || ''} onChange={(event) => setHouse({ ...house, payment_note: event.target.value })} /></Field>
             <Field label="Pied de document" wide><textarea value={house.footer || ''} onChange={(event) => setHouse({ ...house, footer: event.target.value })} /></Field>
-            <button className="btn btn-primary" type="submit">Enregistrer la maison</button>
+            <button className="btn btn-primary" type="submit">Enregistrer</button>
           </div>
           <aside className="letterhead">
             <p className="kicker">Aperçu d’en-tête</p>
@@ -169,7 +176,7 @@ export default function Admin() {
             <article key={item.id}>
               <span className="dot" />
               <div className="quiet-row">
-                <span>{item.description}<br /><small className="muted">{item.user?.name || 'Atelier'} · {item.action}</small></span>
+                <span>{item.description}<br /><small className="muted">{item.user?.name || 'Système'} · {item.action}</small></span>
                 <span className="muted">{formatDate(item.created_at)}</span>
               </div>
             </article>
@@ -178,7 +185,7 @@ export default function Admin() {
       ) : null}
 
       {form ? (
-        <Modal title={form.id ? 'Modifier un accès' : 'Inviter dans l’atelier'} onClose={() => setForm(null)}>
+        <Modal title={form.id ? 'Modifier le compte' : 'Nouveau compte'} onClose={() => setForm(null)}>
           <form className="stack" onSubmit={saveUser}>
             <Banner>{error}</Banner>
             <div className="fields">
@@ -190,11 +197,22 @@ export default function Admin() {
               <Field label="Fonction"><input value={form.job_title || ''} onChange={(event) => setForm({ ...form, job_title: event.target.value })} /></Field>
               <Field label="Rôle">
                 <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-                  <option value="admin">Administration</option>
-                  <option value="commercial">Commercial</option>
-                  <option value="comptable">Comptabilité</option>
+                  {form.role === 'dirigeant' ? <option value="dirigeant">Dirigeant</option> : null}
+                  <option value="admin">Administrateur</option>
+                  <option value="commercial">Responsable commercial</option>
+                  <option value="comptable">Comptable</option>
+                  <option value="chef_projet">Chef de projet</option>
+                  <option value="client">Client</option>
                 </select>
               </Field>
+              {form.role === 'client' ? (
+                <Field label="Fiche client" wide>
+                  <select value={form.client_id || ''} onChange={(event) => setForm({ ...form, client_id: event.target.value })} required>
+                    <option value="">Choisir le client</option>
+                    {clients.map((item) => <option key={item.id} value={item.id}>{item.company}</option>)}
+                  </select>
+                </Field>
+              ) : null}
               <label className="check-row wide">
                 <input type="checkbox" checked={Boolean(form.is_active)} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} />
                 Compte actif

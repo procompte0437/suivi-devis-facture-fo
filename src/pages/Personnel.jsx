@@ -41,7 +41,7 @@ export default function Personnel() {
         <div>
           <p className="kicker">Entreprise</p>
           <h1>Personnel</h1>
-          <p className="lead">Les personnes qui portent les tâches du Gantt.</p>
+          <p className="lead">Les personnes à qui sont assignées les tâches des projets.</p>
         </div>
       </header>
       <Banner>{error}</Banner>

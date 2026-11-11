@@ -9,7 +9,7 @@ const FILTERS = [['', 'Tous'], ['cadrage', 'Cadrage'], ['en_cours', 'En cours'],
 
 export default function Projects() {
   const navigate = useNavigate();
-  const { settings } = useAuth();
+  const { settings, can } = useAuth();
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -25,9 +25,9 @@ export default function Projects() {
         <div>
           <p className="kicker">Relation</p>
           <h1>Projets</h1>
-          <p className="lead">Le fil de chaque mission, du cadrage à la livraison.</p>
+          <p className="lead">Étapes, avancement et dates prévues de chaque projet.</p>
         </div>
-        <button className="btn btn-primary" type="button" onClick={() => navigate('/projets/nouveau')}>Nouveau projet</button>
+        {can('projects') ? <button className="btn btn-primary" type="button" onClick={() => navigate('/projets/nouveau')}>Nouveau projet</button> : null}
       </header>
       <Banner>{error}</Banner>
       <div className="filters">

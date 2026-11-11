@@ -84,7 +84,7 @@ export function Empty({ title, text }) {
   );
 }
 
-export function Loading({ label = 'Ouverture de l’atelier', inline = false }) {
+export function Loading({ label = 'Chargement', inline = false }) {
   return (
     <div className={inline ? 'loading inline' : 'loading'}>
       <span className="spin" />

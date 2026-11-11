@@ -11,6 +11,7 @@ import InvoiceStudio from './pages/InvoiceStudio';
 import Invoices from './pages/Invoices';
 import Login from './pages/Login';
 import Personnel from './pages/Personnel';
+import { PortalHome, PortalInvoice, PortalLayout, PortalProject, PortalQuote } from './pages/Portal';
 import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import QuoteStudio from './pages/QuoteStudio';
@@ -23,7 +24,16 @@ function RequireAuth() {
   const auth = useAuth();
   if (!auth?.ready) return <Loading />;
   if (!auth.user) return <Navigate to="/login" replace />;
+  if (auth.isClient) return <Navigate to="/espace-client" replace />;
   return <Shell />;
+}
+
+function RequireClient() {
+  const auth = useAuth();
+  if (!auth?.ready) return <Loading />;
+  if (!auth.user) return <Navigate to="/login" replace />;
+  if (!auth.isClient) return <Navigate to="/tableau" replace />;
+  return <PortalLayout />;
 }
 
 export default function App() {
@@ -59,6 +69,12 @@ export default function App() {
           <Route path="entreprises" element={<Companies />} />
           <Route path="statistiques" element={<Stats />} />
           <Route path="admin" element={<Admin />} />
+        </Route>
+        <Route element={<RequireClient />}>
+          <Route path="espace-client" element={<PortalHome />} />
+          <Route path="espace-client/devis/:id" element={<PortalQuote />} />
+          <Route path="espace-client/factures/:id" element={<PortalInvoice />} />
+          <Route path="espace-client/projets/:id" element={<PortalProject />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

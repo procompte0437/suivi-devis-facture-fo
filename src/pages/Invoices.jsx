@@ -9,7 +9,7 @@ const FILTERS = [['', 'Toutes'], ['brouillon', 'Brouillons'], ['emise', 'Émises
 
 export default function Invoices() {
   const navigate = useNavigate();
-  const { settings } = useAuth();
+  const { settings, can } = useAuth();
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
@@ -30,9 +30,9 @@ export default function Invoices() {
         <div>
           <p className="kicker">Relation</p>
           <h1>Factures</h1>
-          <p className="lead">Émission, échéance et encaissement au même endroit.</p>
+          <p className="lead">Factures émises, échéances et paiements reçus.</p>
         </div>
-        <Link className="btn btn-primary" to="/factures/nouvelle">Nouvelle facture</Link>
+        {can('invoices') ? <Link className="btn btn-primary" to="/factures/nouvelle">Nouvelle facture</Link> : null}
       </header>
       <Banner>{error}</Banner>
       <div className="filters">
