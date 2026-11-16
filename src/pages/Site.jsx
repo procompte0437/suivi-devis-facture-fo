@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, errorText } from '../api';
 import { DEMO_ACCOUNTS } from './site/data';
-import { PageBanner, PageBody, PageCta, SiteAside, SiteIcon } from './site/SiteParts';
+import { PageBanner, PageBody, PageCta, SiteIcon } from './site/SiteParts';
 
 export { Home } from './Landing';
 export { SiteLayout } from './site/SiteParts';
@@ -132,7 +132,7 @@ export function Features() {
   return (
     <main>
       <PageBanner title="Fonctionnalités" lead="Les modules du portail et ce que chaque rôle peut y faire." />
-      <PageBody aside={<SiteAside active={`/fonctionnalites#${current.id}`} />}>
+      <PageBody>
         <p>
           DOUKOU regroupe dans une seule base les clients, les devis, les factures, les paiements et les projets.
           Chaque utilisateur se connecte avec son compte et n’accède qu’aux fonctions de son rôle.

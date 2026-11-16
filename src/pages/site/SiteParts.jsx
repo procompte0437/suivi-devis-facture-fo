@@ -41,32 +41,19 @@ export function SiteIcon({ name }) {
    Navigation et index de recherche
    ------------------------------------------------------------------ */
 
-const MENUS = [
-  {
-    label: 'Fonctionnalités',
-    to: '/fonctionnalites',
-    items: MODULES.map(([title, href, , text]) => [title, text, href]),
-  },
-  {
-    label: 'Secteurs',
-    to: '/secteurs',
-    items: [
-      ['Artisans', 'Du devis à la fin des travaux.', '/secteurs#artisans'],
-      ['Agences et bureaux', 'Plusieurs clients suivis en parallèle.', '/secteurs#agences'],
-      ['BTP et chantiers', 'Étapes, budget et planning.', '/secteurs#btp'],
-      ['Indépendants', 'Un compte, une ou plusieurs entreprises.', '/secteurs#independants'],
-    ],
-  },
-  {
-    label: 'Ressources',
-    to: '/conseils',
-    items: [
-      ['Conseils d’utilisation', 'Bien démarrer avec le portail.', '/conseils'],
-      ['Questions fréquentes', 'Les réponses aux questions courantes.', '/conseils#faq'],
-      ['Pourquoi DOUKOU', 'Le problème que le portail résout.', '/vision'],
-      ['À propos', 'Le projet et son origine.', '/a-propos'],
-    ],
-  },
+const NAV = [
+  ['Produit', '/fonctionnalites'],
+  ['Démo', '/demo'],
+  ['Tarifs', '/tarifs'],
+  ['Contact', '/contact'],
+];
+
+// Liens secondaires : seulement dans le menu mobile et le pied de page.
+const MORE = [
+  ['Secteurs', '/secteurs'],
+  ['Conseils', '/conseils'],
+  ['Questions fréquentes', '/conseils#faq'],
+  ['À propos', '/a-propos'],
 ];
 
 const SEARCH_INDEX = [
@@ -97,7 +84,22 @@ function normalize(text) {
 export function SiteLayout() {
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+
+  // L'en-tête se resserre dès que l'on fait défiler la page.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Pas de défilement de la page derrière le menu mobile.
+  useEffect(() => {
+    document.body.style.overflow = menu ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menu]);
 
   // Fermer le menu et gérer les ancres à chaque changement de page.
   useEffect(() => {
@@ -126,52 +128,45 @@ export function SiteLayout() {
 
   return (
     <div className={`st${menu ? ' menu-open' : ''}`}>
-      <div className="st-util">
-        <div className="st-wrap">
-          <nav aria-label="Accès rapides">
-            <Link to="/demo"><SiteIcon name="play" />Démonstration</Link>
-            <Link to="/fonctionnalites#devis"><SiteIcon name="doc" />Modèles de documents</Link>
-            <Link to="/fonctionnalites#espace-client"><SiteIcon name="user" />Espace client</Link>
-            <Link to="/conseils"><SiteIcon name="book" />Conseils</Link>
-          </nav>
-          <div className="st-util-end">
-            <Link to="/login">Connexion</Link>
-            <Link className="solid" to="/inscription">Créer un compte</Link>
-          </div>
-        </div>
-      </div>
-
-      <header className="st-head">
+      <header className={`st-head${scrolled ? ' scrolled' : ''}`}>
         <div className="st-wrap">
           <Link to="/" className="st-logo" aria-label="DOUKOU, accueil">
             <img src="/logo/logo-doukou-clair.png" alt="DOUKOU" />
           </Link>
           <nav className="st-menu" aria-label="Menu principal">
-            {MENUS.map((item) => (
-              <div className="st-drop" key={item.label}>
-                <NavLink to={item.to}>{item.label}<SiteIcon name="chevron" /></NavLink>
-                <div className="st-panel">
-                  {item.items.map(([title, text, href]) => (
-                    <Link key={href} to={href}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <NavLink to="/demo">Démo</NavLink>
-            <NavLink to="/tarifs">Tarifs</NavLink>
-            <NavLink to="/contact">Contact</NavLink>
+            {NAV.map(([label, to]) => <NavLink key={to} to={to}>{label}</NavLink>)}
           </nav>
-          <button className="st-search-btn" type="button" aria-label="Rechercher sur le site" onClick={() => { setMenu(false); setSearch(true); }}>
-            <SiteIcon name="search" />
-          </button>
-          <button className="st-burger" type="button" aria-expanded={menu} aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} onClick={() => setMenu((value) => !value)}>
-            <SiteIcon name={menu ? 'close' : 'menu'} />
+          <div className="st-head-end">
+            <button className="st-search-btn" type="button" aria-label="Rechercher sur le site" onClick={() => { setMenu(false); setSearch(true); }}>
+              <SiteIcon name="search" />
+              <span>Rechercher</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+            <Link className="st-signin" to="/login">Connexion</Link>
+            <Link className="st-btn st-pill" to="/inscription">Essayer gratuitement</Link>
+          </div>
+          <button className="st-burger" type="button" aria-expanded={menu} aria-controls="st-sheet" aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} onClick={() => setMenu((value) => !value)}>
+            <span /><span />
           </button>
         </div>
       </header>
+
+      <div className="st-sheet-menu" id="st-sheet" aria-hidden={!menu} inert={!menu ? true : undefined}>
+        <nav aria-label="Menu mobile">
+          {NAV.map(([label, to], index) => (
+            <NavLink key={to} to={to} style={{ '--i': index }}>
+              <small>{String(index + 1).padStart(2, '0')}</small>{label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="st-sheet-more">
+          {MORE.map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}
+        </div>
+        <div className="st-sheet-actions">
+          <Link className="st-btn st-pill block" to="/inscription">Essayer gratuitement</Link>
+          <Link className="st-btn ghost st-pill block" to="/login">Connexion</Link>
+        </div>
+      </div>
 
       {search ? <SiteSearch onClose={() => setSearch(false)} /> : null}
       <Outlet />
@@ -234,36 +229,32 @@ function SiteSearch({ onClose }) {
 function SiteFooter() {
   return (
     <footer className="st-foot">
-      <div className="st-wrap">
-        <div className="st-foot-logo">
+      <div className="st-wrap st-foot-main">
+        <div className="st-foot-brand">
           <Link to="/" aria-label="DOUKOU, accueil"><img src="/logo/logo-doukou.png" alt="DOUKOU" /></Link>
+          <p>Suivre chaque dossier client, du devis au dernier paiement.</p>
         </div>
-        <div className="st-foot-cols">
-          <div>
-            <h2>Liens utiles</h2>
-            <Link to="/a-propos">À propos de DOUKOU</Link>
-            <Link to="/demo">Comptes de démonstration</Link>
-            <Link to="/conseils#faq">Questions fréquentes</Link>
-            <Link to="/contact">Nous contacter</Link>
-          </div>
-          <div>
-            <h2>Fonctionnalités</h2>
-            {MODULES.slice(0, 5).map(([title, href]) => <Link key={href} to={href}>{title}</Link>)}
-          </div>
-          <div>
-            <h2>Accès</h2>
-            <p>Le portail fonctionne dans le navigateur, sur ordinateur et sur téléphone.</p>
-            <Link to="/login">Se connecter</Link>
-            <Link to="/inscription">Créer un compte</Link>
-          </div>
-        </div>
+        <nav aria-label="Produit">
+          <h2>Produit</h2>
+          {NAV.slice(0, 3).map(([label, to]) => <Link key={to} to={to}>{label === 'Produit' ? 'Fonctionnalités' : label}</Link>)}
+          <Link to="/secteurs">Secteurs</Link>
+        </nav>
+        <nav aria-label="Ressources">
+          <h2>Ressources</h2>
+          {MORE.slice(1).map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}
+        </nav>
+        <nav aria-label="Compte">
+          <h2>Compte</h2>
+          <Link to="/login">Connexion</Link>
+          <Link to="/inscription">Créer un compte</Link>
+          <Link to="/contact">Nous écrire</Link>
+        </nav>
       </div>
       <div className="st-foot-bottom">
-        © {YEAR} DOUKOU · Devis, factures et suivi de projets · Libreville
-        <span>|</span>
-        <Link to="/contact">Contact</Link>
-        <span>|</span>
-        <Link to="/a-propos">À propos</Link>
+        <div className="st-wrap">
+          <span>© {YEAR} DOUKOU · Libreville</span>
+          <span>Devis, factures et suivi de projets</span>
+        </div>
       </div>
     </footer>
   );
@@ -297,27 +288,19 @@ export function PageBody({ children, aside }) {
   );
 }
 
-export function SiteAside({ active, children }) {
+export function SiteAside({ children }) {
   return (
     <aside className="st-aside">
       {children}
-      <section>
-        <h2>Les modules</h2>
-        <ul className="st-aside-list">
-          {MODULES.map(([title, href]) => (
-            <li key={href}>
-              <Link to={href} className={active === href ? 'on' : ''}>
-                <SiteIcon name="folder" />
-                {title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
       <section className="st-aside-card">
         <h3>Voir DOUKOU en action</h3>
-        <p>Un compte de démonstration par rôle, déjà rempli avec des clients, des devis et des projets.</p>
+        <p>Un compte par rôle, déjà rempli avec des clients, des devis et des projets.</p>
         <Link className="st-btn light block" to="/demo">Essayer la démo</Link>
+      </section>
+      <section className="st-aside-help">
+        <h3>Une question ?</h3>
+        <p>Nous répondons par e-mail.</p>
+        <Link to="/contact">Nous écrire <SiteIcon name="arrow" /></Link>
       </section>
     </aside>
   );
