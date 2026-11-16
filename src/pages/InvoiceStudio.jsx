@@ -5,6 +5,7 @@ import { useAuth } from '../auth';
 import { dateInput, formatDate, METHODS, money, todayISO, UNITS } from '../format';
 import { Paper } from '../components/Paper';
 import { INVOICE_TEMPLATES } from '../templates';
+import { DocumentPicker, PrintDocument } from '../components/DocumentPicker';
 import { Banner, Field, Loading } from '../components/ui';
 
 function blankLine() {
@@ -39,6 +40,8 @@ export default function InvoiceStudio() {
     template: 'cedre',
   });
   const [lines, setLines] = useState([blankLine()]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [printing, setPrinting] = useState(null);
 
   useEffect(() => {
     api('/clients').then(setClients).catch((err) => setError(errorText(err)));
@@ -78,13 +81,14 @@ export default function InvoiceStudio() {
     setLines(lines.map((line, lineIndex) => (lineIndex === index ? { ...line, [key]: value } : line)));
   }
 
-  async function save(statusOverride) {
+  async function save(statusOverride, templateOverride) {
     setPending(true);
     setError('');
     setNotice('');
     const payload = {
       ...form,
       status: statusOverride || form.status,
+      template: templateOverride || form.template,
       client_id: Number(form.client_id),
       project_id: form.project_id ? Number(form.project_id) : null,
       tax_rate: Number(form.tax_rate),
@@ -140,6 +144,29 @@ export default function InvoiceStudio() {
     }
   }
 
+  const paperProps = {
+    number: invoice?.number,
+    status: invoice?.display_status || form.status,
+    client,
+    title: form.title,
+    issue: form.issue_date,
+    until: form.due_date,
+    lines,
+    discount: form.discount,
+    taxRate: form.tax_rate,
+    notes: form.notes,
+  };
+
+  // Le modèle choisi est enregistré sur la facture tant qu'elle n'est pas figée par un paiement.
+  async function generate(template) {
+    if (template !== form.template) {
+      setForm({ ...form, template });
+      if (invoice && !locked) await save(undefined, template);
+    }
+    setPickerOpen(false);
+    setPrinting(template);
+  }
+
   if (!ready) return <Loading inline label="Chargement de la facture" />;
 
   return (
@@ -150,7 +177,7 @@ export default function InvoiceStudio() {
           <h1>{invoice?.number || 'Nouvelle facture'}</h1>
         </div>
         <div className="actions">
-          <button className="btn" type="button" onClick={() => window.print()}>Imprimer</button>
+          <button className="btn" type="button" onClick={() => setPickerOpen(true)}>Générer le PDF</button>
           {canWrite && invoice?.status === 'brouillon' ? <button className="btn btn-brass" type="button" onClick={emit}>Émettre</button> : null}
           {canWrite ? (
             <button className="btn btn-primary" type="button" disabled={pending || locked} onClick={() => save()}>
@@ -239,22 +266,20 @@ export default function InvoiceStudio() {
           ) : null}
         </div>
         <div className="sheet-wrap">
-          <Paper
-            kind="facture"
-            number={invoice?.number}
-            status={invoice?.display_status || form.status}
-            client={client}
-            title={form.title}
-            issue={form.issue_date}
-            until={form.due_date}
-            lines={lines}
-            discount={form.discount}
-            taxRate={form.tax_rate}
-            notes={form.notes}
-            template={form.template}
-          />
+          <Paper {...paperProps} kind="facture" template={form.template} />
         </div>
       </div>
+      {pickerOpen ? (
+        <DocumentPicker
+          kind="facture"
+          templates={INVOICE_TEMPLATES}
+          current={form.template}
+          paper={paperProps}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={generate}
+        />
+      ) : null}
+      {printing ? <PrintDocument paper={paperProps} kind="facture" template={printing} onDone={() => setPrinting(null)} /> : null}
     </div>
   );
 }

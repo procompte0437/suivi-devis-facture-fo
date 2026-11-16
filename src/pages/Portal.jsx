@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { api, errorText } from '../api';
 import { useAuth } from '../auth';
+import { PrintDocument } from '../components/DocumentPicker';
 import { Paper } from '../components/Paper';
 import { Banner, Loading, Modal, Pill } from '../components/ui';
 import { formatDate, INVOICE_STATUS, METHODS, money, PROJECT_STATUS, QUOTE_STATUS } from '../format';
@@ -163,6 +164,7 @@ export function PortalQuote() {
   const [decision, setDecision] = useState(null);
   const [note, setNote] = useState('');
   const [pending, setPending] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
     api(`/portal/quotes/${id}`).then(setQuote).catch((err) => setError(errorText(err)));
@@ -196,7 +198,7 @@ export function PortalQuote() {
           <h1>{quote.number}</h1>
         </div>
         <div className="actions">
-          <button className="btn" type="button" onClick={() => window.print()}>Imprimer / PDF</button>
+          <button className="btn" type="button" onClick={() => setPrinting(true)}>Télécharger en PDF</button>
           {open ? (
             <>
               <button className="btn btn-danger" type="button" onClick={() => setDecision('refuse')}>Refuser</button>
@@ -232,6 +234,7 @@ export function PortalQuote() {
           notes={quote.notes}
           template={quote.template}
         />
+        {printing ? <PrintDocument paper={{ number: quote.number, status: quote.status, client: quote.client, title: quote.title, issue: quote.issue_date, until: quote.valid_until, lines: quote.lines, discount: quote.discount, taxRate: quote.tax_rate, notes: quote.notes }} kind="devis" template={quote.template} onDone={() => setPrinting(false)} /> : null}
       </div>
 
       {decision ? (
@@ -266,6 +269,7 @@ export function PortalInvoice() {
   const { id } = useParams();
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState('');
+  const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
     api(`/portal/invoices/${id}`).then(setInvoice).catch((err) => setError(errorText(err)));
@@ -285,7 +289,7 @@ export function PortalInvoice() {
         </div>
         <div className="actions">
           <Pill status={invoice.display_status} map={INVOICE_STATUS} />
-          <button className="btn" type="button" onClick={() => window.print()}>Imprimer / PDF</button>
+          <button className="btn" type="button" onClick={() => setPrinting(true)}>Télécharger en PDF</button>
         </div>
       </header>
       <div className="card no-print" style={{ marginBottom: 14 }}>
@@ -320,6 +324,7 @@ export function PortalInvoice() {
           notes={invoice.notes}
           template={invoice.template}
         />
+        {printing ? <PrintDocument paper={{ number: invoice.number, status: invoice.status, client: invoice.client, title: invoice.title, issue: invoice.issue_date, until: invoice.due_date, lines: invoice.lines, discount: invoice.discount, taxRate: invoice.tax_rate, notes: invoice.notes }} kind="facture" template={invoice.template} onDone={() => setPrinting(false)} /> : null}
       </div>
     </div>
   );

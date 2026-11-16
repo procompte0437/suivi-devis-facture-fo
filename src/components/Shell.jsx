@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { initials, monthLabel, ROLES } from '../format';
+import { Onboarding } from './Onboarding';
 import { Icon } from './ui';
 
 const NAV = [
@@ -20,6 +21,9 @@ const NAV = [
 export default function Shell() {
   const { user, logout, company, companies, switchCompany, isManager } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  // Compte sans entreprise (compte personne) : on commence par en créer une.
+  const needsCompany = !company && !companies?.length && pathname !== '/entreprises';
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('oree_nav') === 'closed');
   const [drawer, setDrawer] = useState(false);
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 820px)').matches);
@@ -156,7 +160,7 @@ export default function Shell() {
           <div className="date-pill">{monthLabel()}</div>
         </header>
         <div className="canvas">
-          <Outlet />
+          {needsCompany ? <Onboarding /> : <Outlet />}
         </div>
       </div>
       {palette ? (

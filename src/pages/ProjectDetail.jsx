@@ -5,6 +5,7 @@ import { useAuth } from '../auth';
 import { dateInput, formatDate, INVOICE_STATUS, PROJECT_STATUS, QUOTE_STATUS, todayISO } from '../format';
 import { Banner, Field, Loading, Pill } from '../components/ui';
 import { Gantt } from '../components/Gantt';
+import { ProjectInsights } from '../components/ProjectInsights';
 
 const EMPTY = {
   client_id: '',
@@ -29,7 +30,8 @@ export default function ProjectDetail() {
   const { id } = useParams();
   const isNew = !id || id === 'nouveau';
   const navigate = useNavigate();
-  const { can } = useAuth();
+  const { can, settings } = useAuth();
+  const [planDirty, setPlanDirty] = useState(false);
   const canWrite = can('projects');
   const [clients, setClients] = useState([]);
   const [step, setStep] = useState({ progress: 0, status: 'cadrage', comment: '' });
@@ -115,6 +117,7 @@ export default function ProjectDetail() {
         ? await api('/projects', { method: 'POST', body: payload })
         : await api(`/projects/${id}`, { method: 'PUT', body: payload });
       setNotice('Projet enregistré.');
+      setPlanDirty(false);
       if (isNew) navigate(`/projets/${saved.id}`, { replace: true });
       else setProject(saved);
     } catch (err) {
@@ -161,7 +164,34 @@ export default function ProjectDetail() {
         <Banner tone="ok">{notice}</Banner>
       </div>
       {!canWrite ? <p className="muted" style={{ marginBottom: 12 }}>Lecture seule : les projets sont gérés par le chef de projet.</p> : null}
-      <form className="studio" onSubmit={save}>
+      {project || form.tasks.some((task) => task.title) ? (
+        <>
+          <ProjectInsights form={form} project={project} staff={staff} currency={settings?.currency} />
+          <section className="card gantt-card">
+            <header>
+              <div>
+                <h2>Planning</h2>
+                <p className="sub">Diagramme de Gantt des tâches et des jalons, avec la ligne du jour.</p>
+              </div>
+              {canWrite && planDirty ? <button className="btn btn-primary btn-tiny" type="submit" form="project-form">Enregistrer le planning</button> : null}
+            </header>
+            <Gantt
+              start={form.start_date}
+              end={form.due_date}
+              milestones={form.milestones}
+              tasks={form.tasks.map((task) => ({
+                ...task,
+                staff_name: staff.find((member) => String(member.id) === String(task.staff_id))?.name,
+              }))}
+              onChange={canWrite ? (index, dates) => {
+                setForm({ ...form, tasks: form.tasks.map((item, i) => (i === index ? { ...item, ...dates } : item)) });
+                setPlanDirty(true);
+              } : undefined}
+            />
+          </section>
+        </>
+      ) : null}
+      <form className="studio" id="project-form" onSubmit={save}>
         <fieldset className="editor" disabled={!canWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
           <div className="card fields">
             <Field label="Client">
@@ -228,14 +258,6 @@ export default function ProjectDetail() {
             </div>
           ))}
           <button className="btn btn-tiny" type="button" onClick={() => setForm({ ...form, tasks: [...form.tasks, { title: '', staff_id: '', start_date: form.start_date, end_date: form.due_date, progress: 0 }] })}>Ajouter une tâche</button>
-          <Gantt
-            start={form.start_date}
-            end={form.due_date}
-            tasks={form.tasks.map((task) => ({
-              ...task,
-              staff_name: staff.find((member) => String(member.id) === String(task.staff_id))?.name,
-            }))}
-          />
           <h3 style={{ marginTop: 22 }}>Budget du projet</h3>
           {form.budget_lines.map((line, index) => (
             <div className="task-row" key={index}>

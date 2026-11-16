@@ -152,6 +152,45 @@ export function Home() {
       <section className="st-section">
         <div className="st-wrap">
           <header className="st-section-title">
+            <h2>Le bureau, comme dans l’espace équipe</h2>
+            <p>Indicateurs du mois, échéances encore ouvertes et avancement des projets. La même lecture que dans le tableau de bord.</p>
+          </header>
+          <div className="st-desk" aria-label="Aperçu du tableau de bord">
+            <div className="st-kpis">
+              <p><span>Facturé</span><strong>4 800 000</strong><small>F CFA · ce mois</small></p>
+              <p><span>Encaissé</span><strong>3 100 000</strong><small>F CFA · ce mois</small></p>
+              <p><span>Devis</span><strong>{stats ? stats.quotes : '—'}</strong><small>dans la démonstration</small></p>
+              <p><span>Projets en cours</span><strong>2</strong><small>avancement publié</small></p>
+            </div>
+            <div className="st-desk-grid">
+              <article>
+                <h3>Échéances</h3>
+                <table>
+                  <thead><tr><th>Pièce</th><th>Client</th><th>Échéance</th><th>Solde</th></tr></thead>
+                  <tbody>
+                    <tr><td>FAC-2026-0009</td><td>Clinique Les Flamboyants</td><td>18 nov.</td><td>2 393 040</td></tr>
+                    <tr><td>FAC-2026-0004</td><td>Maison Olamba</td><td>2 déc.</td><td>890 000</td></tr>
+                  </tbody>
+                </table>
+              </article>
+              <article>
+                <h3>Projets en cours</h3>
+                {[['Signalétique de la clinique', '45'], ['Atelier Louis', '72']].map(([name, value]) => (
+                  <p className="st-desk-job" key={name}>
+                    <span>{name}<b>{value} %</b></span>
+                    <i><em style={{ width: `${value}%` }} /></i>
+                  </p>
+                ))}
+              </article>
+            </div>
+          </div>
+          <p className="st-desk-link"><Link to="/demo">Ouvrir cette lecture dans la démonstration</Link></p>
+        </div>
+      </section>
+
+      <section className="st-section tint">
+        <div className="st-wrap">
+          <header className="st-section-title">
             <h2>Comment ça marche</h2>
           </header>
           <ol className="st-flow">
@@ -166,9 +205,9 @@ export function Home() {
         <div className="st-wrap">
           <p><b>{stats ? stats.quotes : '—'}</b><span>devis</span></p>
           <p><b>{stats ? stats.invoices : '—'}</b><span>factures</span></p>
+          <p><b>{stats ? stats.companies : '—'}</b><span>{stats && stats.companies > 1 ? 'entreprises hébergées' : 'entreprise hébergée'}</span></p>
           <p><b>10</b><span>modèles de documents</span></p>
-          <p><b>5</b><span>rôles d’accès</span></p>
-          <small>Données de l’entreprise de démonstration.</small>
+          <small>Devis et factures réalisés sur la plateforme.</small>
         </div>
       </section>
 

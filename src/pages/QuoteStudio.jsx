@@ -4,7 +4,8 @@ import { api, errorText } from '../api';
 import { useAuth } from '../auth';
 import { dateInput, formatDate, money, ROLES, todayISO, UNITS } from '../format';
 import { Paper } from '../components/Paper';
-import { QUOTE_TEMPLATES } from '../templates';
+import { INVOICE_TEMPLATES, QUOTE_TEMPLATES } from '../templates';
+import { DocumentPicker, PrintDocument } from '../components/DocumentPicker';
 import { Banner, Field, Loading, Modal } from '../components/ui';
 
 const SUGGESTIONS = [
@@ -41,6 +42,9 @@ export default function QuoteStudio() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [createProject, setCreateProject] = useState(true);
+  const [invoiceTemplate, setInvoiceTemplate] = useState('cedre');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [printing, setPrinting] = useState(null);
   const [form, setForm] = useState({
     client_id: '',
     project_id: '',
@@ -90,13 +94,14 @@ export default function QuoteStudio() {
     setLines(lines.map((line, lineIndex) => (lineIndex === index ? { ...line, [key]: value } : line)));
   }
 
-  async function save(statusOverride) {
+  async function save(statusOverride, templateOverride) {
     setPending(true);
     setError('');
     setNotice('');
     const payload = {
       ...form,
       status: statusOverride || form.status,
+      template: templateOverride || form.template,
       client_id: Number(form.client_id),
       project_id: form.project_id ? Number(form.project_id) : null,
       tax_rate: Number(form.tax_rate),
@@ -150,7 +155,7 @@ export default function QuoteStudio() {
     try {
       const invoice = await api(`/quotes/${saved.id}/convert`, {
         method: 'POST',
-        body: { create_project: createProject && !form.project_id, due_date: todayISO(30) },
+        body: { create_project: createProject && !form.project_id, due_date: todayISO(30), template: invoiceTemplate },
       });
       navigate(`/factures/${invoice.id}`);
     } catch (err) {
@@ -168,6 +173,31 @@ export default function QuoteStudio() {
     }
   }
 
+  const paperProps = {
+    number: quote?.number,
+    status: form.status,
+    client,
+    title: form.title,
+    issue: form.issue_date,
+    until: form.valid_until,
+    lines,
+    discount: form.discount,
+    taxRate: form.tax_rate,
+    notes: form.notes,
+  };
+
+  // Le modèle choisi à la génération devient celui du devis (s'il est déjà enregistré).
+  async function generate(template) {
+    if (canWrite && quote && template !== form.template) {
+      setForm({ ...form, template });
+      await save(undefined, template);
+    } else if (template !== form.template) {
+      setForm({ ...form, template });
+    }
+    setPickerOpen(false);
+    setPrinting(template);
+  }
+
   if (!ready) return <Loading inline label="Chargement du devis" />;
 
   return (
@@ -178,7 +208,7 @@ export default function QuoteStudio() {
           <h1>{quote?.number || 'Nouveau devis'}</h1>
         </div>
         <div className="actions">
-          <button className="btn" type="button" onClick={() => window.print()}>Imprimer</button>
+          <button className="btn" type="button" onClick={() => setPickerOpen(true)}>Générer le PDF</button>
           {canWrite && quote?.status === 'brouillon' ? (
             <button className="btn btn-danger" type="button" onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}>
               {confirmDelete ? 'Confirmer' : 'Supprimer'}
@@ -221,6 +251,13 @@ export default function QuoteStudio() {
               <input type="checkbox" checked={createProject} onChange={(event) => setCreateProject(event.target.checked)} disabled={Boolean(form.project_id)} />
               Ouvrir un projet si le devis n’en a pas
             </label>
+            <div className="template-picks compact" role="radiogroup" aria-label="Modèle de la facture">
+              {INVOICE_TEMPLATES.map(([value, label]) => (
+                <button key={value} type="button" role="radio" aria-checked={invoiceTemplate === value} className={invoiceTemplate === value ? 'on' : ''} onClick={() => setInvoiceTemplate(value)}>
+                  <b>{label}</b>
+                </button>
+              ))}
+            </div>
             <button className="btn btn-brass" type="button" disabled={pending} onClick={convert}>Créer la facture</button>
           </div>
         ) : null}
@@ -303,22 +340,20 @@ export default function QuoteStudio() {
           </div>
         </fieldset>
         <div className="sheet-wrap">
-          <Paper
-            kind="devis"
-            number={quote?.number}
-            status={form.status}
-            client={client}
-            title={form.title}
-            issue={form.issue_date}
-            until={form.valid_until}
-            lines={lines}
-            discount={form.discount}
-            taxRate={form.tax_rate}
-            notes={form.notes}
-            template={form.template}
-          />
+          <Paper {...paperProps} kind="devis" template={form.template} />
         </div>
       </div>
+      {pickerOpen ? (
+        <DocumentPicker
+          kind="devis"
+          templates={QUOTE_TEMPLATES}
+          current={form.template}
+          paper={paperProps}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={generate}
+        />
+      ) : null}
+      {printing ? <PrintDocument paper={paperProps} kind="devis" template={printing} onDone={() => setPrinting(null)} /> : null}
     </div>
   );
 }
