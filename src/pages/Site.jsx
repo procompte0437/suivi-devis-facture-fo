@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, errorText } from '../api';
+import { useSiteImages } from '../siteImages';
 import { DEMO_ACCOUNTS } from './site/data';
 import { PageBanner, PageBody, PageCta, SiteIcon } from './site/SiteParts';
 
@@ -183,11 +184,12 @@ export function Features() {
    Secteurs
    ------------------------------------------------------------------ */
 export function Sectors() {
+  const images = useSiteImages();
   const sectors = [
-    ['artisans', '/home/metier-platre.jpg', 'Artisans', 'Un devis, un acompte, des travaux avec des dates. Le devis accepté devient la facture, les paiements partiels sont suivis et le client voit l’avancement sans téléphoner.'],
-    ['agences', '/home/metier-peinture.jpg', 'Agences et bureaux', 'Plusieurs clients en parallèle, chacun avec ses devis, ses factures et ses projets. Le tableau de bord montre les devis à relancer et les factures en retard.'],
-    ['btp', '/home/metier-plomberie.jpg', 'BTP et chantiers', 'Étapes, budget prévu et dépensé, planning des équipes. Le Gantt montre qui fait quoi entre le début et la fin prévue du chantier.'],
-    ['independants', '/home/pro-chantier.jpg', 'Indépendants', 'Un compte individuel suffit pour commencer. Vous pourrez ajouter une ou plusieurs entreprises et passer de l’une à l’autre.'],
+    ['artisans', 'sector_artisans', 'Artisans', 'Un devis, un acompte, des travaux avec des dates. Le devis accepté devient la facture, les paiements partiels sont suivis et le client voit l’avancement sans téléphoner.'],
+    ['agences', 'sector_agences', 'Agences et bureaux', 'Plusieurs clients en parallèle, chacun avec ses devis, ses factures et ses projets. Le tableau de bord montre les devis à relancer et les factures en retard.'],
+    ['btp', 'sector_btp', 'BTP et chantiers', 'Étapes, budget prévu et dépensé, planning des équipes. Le Gantt montre qui fait quoi entre le début et la fin prévue du chantier.'],
+    ['independants', 'sector_independants', 'Indépendants', 'Un compte individuel suffit pour commencer. Vous pourrez ajouter une ou plusieurs entreprises et passer de l’une à l’autre.'],
   ];
   return (
     <main>
@@ -195,9 +197,9 @@ export function Sectors() {
       <PageBody>
         <p>Les besoins changent d’un métier à l’autre, mais le circuit reste le même : un devis, une décision, une facture, des paiements et un projet à suivre.</p>
         <div className="st-grid" style={{ gridTemplateColumns: '1fr' }}>
-          {sectors.map(([id, src, title, text]) => (
+          {sectors.map(([id, slot, title, text]) => (
             <article className="st-sector" id={id} key={id}>
-              <img src={src} alt="" />
+              <img src={images[slot].src} alt={images[slot].alt} />
               <div>
                 <h2>{title}</h2>
                 <p>{text}</p>
@@ -348,6 +350,7 @@ export function Vision() {
 }
 
 export function About() {
+  const images = useSiteImages();
   return (
     <main>
       <section className="st-about">
@@ -355,12 +358,10 @@ export function About() {
           <h1>À propos</h1>
           <p>DOUKOU est un portail web de gestion des devis, des factures et du suivi des projets clients, réalisé dans le cadre d’un projet de stage à Libreville. DOUKOU veut dire « suivre » en nzebi.</p>
           <p>Il s’adresse aux petites entreprises de services et de travaux qui gèrent aujourd’hui ces informations dans plusieurs fichiers séparés, et à leurs clients, qui peuvent suivre leurs dossiers en ligne.</p>
-          <h2>La technique</h2>
-          <p>Une API Laravel avec une base PostgreSQL, une interface React, et des accès sécurisés par rôle. Chaque entreprise a ses propres données, séparées de celles des autres.</p>
           <Link className="st-btn ghost" to="/vision">Lire la suite</Link>
         </div>
         <figure>
-          <img src="/home/bandeau-equipe.jpg" alt="Deux artisans dans un jardin, à Libreville" />
+          <img src={images.about.src} alt={images.about.alt} />
         </figure>
       </section>
     </main>

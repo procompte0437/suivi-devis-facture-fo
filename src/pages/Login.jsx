@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { errorText } from '../api';
 import { useAuth } from '../auth';
+import { SocialButtons } from '../components/SocialButtons';
+import { useSiteImages } from '../siteImages';
 import { DEMO_ACCOUNTS } from './site/data';
 
 const DEMO_PASSWORD = 'Cedre2026!';
 
 export default function Login() {
   const { user, ready, login, isClient } = useAuth();
+  const images = useSiteImages();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -33,6 +36,7 @@ export default function Login() {
         <h1>Suivez ce qui vient ensuite</h1>
         <p>Devis, factures et projets, dans le même dossier.</p>
         <form className="st-gate-card" onSubmit={submit}>
+          <SocialButtons />
           {error ? <div className="st-alert err" role="alert">{error}</div> : null}
           <label className="st-input">
             <span>E-mail</span>
@@ -57,7 +61,7 @@ export default function Login() {
         </div>
       </div>
       <figure>
-        <img src="/home/hero-atelier.jpg" alt="Artisan au travail dans son atelier" />
+        <img src={images.login.src} alt={images.login.alt} />
       </figure>
     </main>
   );

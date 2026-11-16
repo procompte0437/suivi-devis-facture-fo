@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { api, errorText } from '../api';
 import { useAuth } from '../auth';
+import { SocialButtons } from '../components/SocialButtons';
 import { PageBanner, SiteAside } from './site/SiteParts';
 
 export default function Register() {
@@ -55,6 +56,7 @@ export default function Register() {
         <div className="st-form-card">
           <h2>Votre compte</h2>
           <p>Compte d’entreprise pour travailler en équipe, ou compte individuel si vous êtes indépendant.</p>
+          <SocialButtons verb="S’inscrire" />
           <form className="st-form" onSubmit={submit}>
             <div className="st-choice" role="radiogroup" aria-label="Type de compte">
               <button type="button" role="radio" aria-checked={form.account_type === 'entreprise'} className={form.account_type === 'entreprise' ? 'on' : ''} onClick={() => set('account_type', 'entreprise')}>Entreprise</button>

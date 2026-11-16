@@ -69,7 +69,9 @@ export function AuthProvider({ children }) {
       return data.user;
     },
     async refresh() {
-      apply(await api('/me'));
+      const data = await api('/me');
+      apply(data);
+      return data;
     },
     async switchCompany(id) {
       const all = String(id) === 'all';

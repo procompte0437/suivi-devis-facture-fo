@@ -1099,3 +1099,83 @@ img.tpl-logo.round { background: #fff; }
 .gx-timeline, .gx-lane, .gx-canvas { overflow-x: clip; overflow-y: visible; }
 .task-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 72px); }
 .task-row > :first-child { grid-column: 1 / -1; }
+
+/* ============================================================
+   Vert translucide du menu latéral, repris par les boutons,
+   onglets et sélecteurs de l'application et le bouton de discussion.
+   ============================================================ */
+:root {
+  --mint: rgba(150, 208, 182, 0.46);
+  --mint-solid: #cfe8dc;
+  --mint-hover: #b9dfcb;
+  --mint-line: rgba(22, 73, 54, 0.16);
+  --mint-ink: #164936;
+}
+.btn-primary, .btn-brass {
+  background: var(--mint-solid);
+  color: var(--mint-ink);
+  border-color: var(--mint-line);
+  font-weight: 650;
+}
+.btn-primary:hover, .btn-brass:hover { background: var(--mint-hover); border-color: var(--mint-line); }
+.chip.on, .gx-zoom button.on {
+  background: var(--mint-solid);
+  color: var(--mint-ink);
+  border-color: var(--mint-line);
+  box-shadow: none;
+}
+.gx-zoom { background: var(--mint); border-color: var(--mint-line); }
+.picker-card.on { border-color: var(--mint-ink); box-shadow: 0 0 0 4px var(--mint); }
+.chat-dock .chat-launch {
+  background: var(--mint-solid);
+  color: var(--mint-ink);
+  border: 1px solid var(--mint-line);
+  box-shadow: 0 12px 30px rgba(22, 73, 54, 0.18);
+}
+.chat-dock .chat-launch:hover { background: var(--mint-hover); }
+.chat-dock .chat-panel header { background: linear-gradient(135deg, var(--mint-solid), rgba(150, 208, 182, 0.75)); color: var(--mint-ink); }
+.chat-dock .chat-panel header span { color: rgba(22, 73, 54, 0.75); }
+.chat-avatar { background: rgba(255, 255, 255, 0.6); border-color: var(--mint-line); color: var(--mint-ink); }
+.chat-dock .chat-panel .chat-close { background: rgba(255, 255, 255, 0.6); color: var(--mint-ink); }
+.chat-dock .chat-log .user { background: var(--mint-solid); color: var(--mint-ink); }
+.chat-dock .chat-panel form button { background: var(--mint-solid); color: var(--mint-ink); }
+.topbar { background-color: #fff; background-image: linear-gradient(var(--mint), var(--mint)); border-bottom-color: var(--mint-line); }
+.topbar .search-btn, .topbar .date-pill, .topbar .menu-btn, .topbar .company-switch { background: rgba(255, 255, 255, 0.6); border-color: var(--mint-line); }
+
+/* ---------- Images du site (administration) ---------- */
+.si-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.si-toolbar .filters { margin: 0; }
+.si-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.si-card { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); transition: box-shadow 0.2s ease; }
+.si-card.custom { border-color: var(--mint-line, rgba(22, 73, 54, 0.16)); box-shadow: 0 0 0 3px var(--mint, rgba(150, 208, 182, 0.46)), var(--shadow); }
+.si-drop { position: relative; display: block; width: 100%; padding: 0; border: 0; background: var(--cream); cursor: pointer; overflow: hidden; aspect-ratio: 16 / 10; }
+.si-drop.si-rond, .si-drop.si-portrait, .si-drop.si-arche { aspect-ratio: 4 / 3; }
+.si-drop.si-bandeau { aspect-ratio: 16 / 6; }
+.si-drop img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s ease; }
+.si-drop:hover img, .si-drop.over img { transform: scale(1.04); }
+.si-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; text-align: center; color: #fff; font-weight: 600; background: rgba(15, 40, 28, 0.45); opacity: 0; transition: opacity 0.2s ease; }
+.si-drop:hover .si-overlay, .si-drop:focus-visible .si-overlay, .si-drop.over .si-overlay, .si-drop:disabled .si-overlay { opacity: 1; }
+.si-drop.over { outline: 3px dashed var(--forest); outline-offset: -6px; }
+.si-body { display: grid; gap: 10px; padding: 14px 16px 16px; }
+.si-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.si-page { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.si-state { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: rgba(60, 50, 30, 0.06); color: var(--muted); }
+.si-state.on { background: var(--mint-solid, #cfe8dc); color: var(--mint-ink, #164936); }
+.si-body h3 { font-size: 18px; line-height: 1.25; }
+.si-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.si-note { margin-top: 18px; max-width: 80ch; }
+
+/* ---------- Aide : parcours et volets ---------- */
+.aide-bloc { margin-bottom: 16px; }
+.aide-bloc h2, .aide-volets h2 { font-size: 22px; margin-bottom: 12px; }
+.chaine { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.chaine li { background: var(--cream); border-radius: 14px; padding: 12px; display: grid; gap: 6px; align-content: start; }
+.chaine b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--forest); color: white; font-size: 13px; }
+.chaine strong { font-size: 15px; }
+.chaine span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.aide-volets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+.aide-etapes, .aide-roles { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+.aide-etapes li, .aide-roles li { line-height: 1.4; }
+@media (max-width: 1100px) {
+  .chaine, .aide-volets { grid-template-columns: 1fr; }
+}

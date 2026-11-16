@@ -5,6 +5,9 @@ import ChatWidget from './components/ChatWidget';
 import { ZoneToasts } from './components/Toasts';
 import Shell from './components/Shell';
 import Admin from './pages/Admin';
+import Aide from './pages/Aide';
+import SiteImages from './pages/SiteImages';
+import SocialCallback from './pages/SocialCallback';
 import Clients from './pages/Clients';
 import Companies from './pages/Companies';
 import Dashboard from './pages/Dashboard';
@@ -57,6 +60,7 @@ export default function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="login" element={<Login />} />
           <Route path="inscription" element={<Register />} />
+          <Route path="connexion-sociale" element={<SocialCallback />} />
         </Route>
         <Route element={<RequireAuth />}>
           <Route path="tableau" element={<Dashboard />} />
@@ -76,6 +80,8 @@ export default function App() {
           <Route path="entreprises" element={<Companies />} />
           <Route path="statistiques" element={<Stats />} />
           <Route path="admin" element={<Admin />} />
+          <Route path="images-site" element={<SiteImages />} />
+          <Route path="aide" element={<Aide />} />
         </Route>
         <Route element={<RequireClient />}>
           <Route path="espace-client" element={<PortalHome />} />

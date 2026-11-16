@@ -16,6 +16,8 @@ const NAV = [
   { to: '/personnel', label: 'Personnel', group: 'Entreprise', icon: 'people' },
   { to: '/referentiel', label: 'Référentiel', group: 'Référentiel', icon: 'layers' },
   { to: '/admin', label: 'Administration', group: 'Entreprise', icon: 'key', admin: true },
+  { to: '/images-site', label: 'Images du site', group: 'Site public', icon: 'image', platform: true },
+  { to: '/aide', label: 'Aide', group: 'Aide', icon: 'help' },
 ];
 
 export default function Shell() {
@@ -31,7 +33,7 @@ export default function Shell() {
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState(null);
 
-  const links = NAV.filter((item) => !item.admin || isManager);
+  const links = NAV.filter((item) => (!item.admin || isManager) && (!item.platform || user?.role === 'admin'));
   const groups = useMemo(() => {
     const order = [];
     links.forEach((item) => {

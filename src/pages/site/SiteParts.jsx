@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api, errorText } from '../../api';
 import '../../site.css';
+import { useSiteImages } from '../../siteImages';
 import { MODULES } from './data';
 
 const YEAR = new Date().getFullYear();
@@ -26,6 +28,9 @@ const PATHS = {
   play: 'M8 5v14l11-7z',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c.8-4 4-6 8-6s7.2 2 8 6',
   book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h7',
+  tools: 'M14.5 6.5a4 4 0 0 0-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 0 0 5.3-5.3l-2.6 2.6-2.4-.6-.6-2.4z',
+  briefcase: 'M4 8h16v11H4zM9 8V5h6v3M4 13h16',
+  helmet: 'M4 16a8 8 0 0 1 16 0zM3 16h18v3H3zM12 8v4M9 9.5 10 12M15 9.5 14 12',
   building: 'M4 21V5l8-3v19M12 9h8v12M7.5 8h1M7.5 12h1M7.5 16h1M15.5 13h1M15.5 17h1M2 21h20',
 };
 
@@ -42,18 +47,19 @@ export function SiteIcon({ name }) {
    ------------------------------------------------------------------ */
 
 const NAV = [
-  ['Produit', '/fonctionnalites'],
+  ['Accueil', '/'],
+  ['Fonctionnalités', '/fonctionnalites'],
   ['Démo', '/demo'],
   ['Tarifs', '/tarifs'],
-  ['Contact', '/contact'],
+  ['À propos', '/a-propos'],
 ];
 
-// Liens secondaires : seulement dans le menu mobile et le pied de page.
+// Liens secondaires : menu mobile et pied de page.
 const MORE = [
   ['Secteurs', '/secteurs'],
   ['Conseils', '/conseils'],
   ['Questions fréquentes', '/conseils#faq'],
-  ['À propos', '/a-propos'],
+  ['Pourquoi DOUKOU', '/vision'],
 ];
 
 const SEARCH_INDEX = [
@@ -129,20 +135,34 @@ export function SiteLayout() {
   return (
     <div className={`st${menu ? ' menu-open' : ''}`}>
       <header className={`st-head${scrolled ? ' scrolled' : ''}`}>
-        <div className="st-wrap">
+        <div className="st-wrap st-head-top">
+          <nav aria-label="Accès rapides">
+            <Link to="/login"><SiteIcon name="user" />Espace client</Link>
+            <Link to="/demo"><SiteIcon name="play" />Démonstration</Link>
+            <Link to="/contact"><SiteIcon name="send" />Nous contacter</Link>
+          </nav>
+        </div>
+        <div className="st-wrap st-head-main">
           <Link to="/" className="st-logo" aria-label="DOUKOU, accueil">
             <img src="/logo/logo-doukou-clair.png" alt="DOUKOU" />
           </Link>
           <nav className="st-menu" aria-label="Menu principal">
-            {NAV.map(([label, to]) => <NavLink key={to} to={to}>{label}</NavLink>)}
+            {NAV.map(([label, to]) => (to === '/fonctionnalites' ? (
+              <div className="st-drop" key={to}>
+                <NavLink to={to}>{label}<SiteIcon name="chevron" /></NavLink>
+                <div className="st-panel">
+                  {MODULES.map(([title, href]) => <Link key={href} to={href}>{title}</Link>)}
+                </div>
+              </div>
+            ) : (
+              <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>
+            )))}
           </nav>
           <div className="st-head-end">
             <button className="st-search-btn" type="button" aria-label="Rechercher sur le site" onClick={() => { setMenu(false); setSearch(true); }}>
               <SiteIcon name="search" />
             </button>
-            <Link className="st-signin" to="/login">Connexion</Link>
-            <Link className="st-btn ghost st-head-quiet" to="/contact">Nous écrire</Link>
-            <Link className="st-btn st-head-cta" to="/inscription">Essayer gratuitement</Link>
+            <Link className="st-btn gold st-head-cta" to="/inscription">Créer un compte</Link>
           </div>
           <button className="st-burger" type="button" aria-expanded={menu} aria-controls="st-sheet" aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} onClick={() => setMenu((value) => !value)}>
             <span /><span />
@@ -153,17 +173,18 @@ export function SiteLayout() {
       <div className="st-sheet-menu" id="st-sheet" aria-hidden={!menu} inert={!menu ? true : undefined}>
         <nav aria-label="Menu mobile">
           {NAV.map(([label, to], index) => (
-            <NavLink key={to} to={to} style={{ '--i': index }}>
+            <NavLink key={to} to={to} end={to === '/'} style={{ '--i': index }}>
               <small>{String(index + 1).padStart(2, '0')}</small>{label}
             </NavLink>
           ))}
         </nav>
         <div className="st-sheet-more">
           {MORE.map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}
+          <Link to="/contact">Nous contacter</Link>
         </div>
         <div className="st-sheet-actions">
-          <Link className="st-btn block" to="/inscription">Essayer gratuitement</Link>
-          <Link className="st-btn ghost block" to="/login">Connexion</Link>
+          <Link className="st-btn gold block" to="/inscription">Créer un compte</Link>
+          <Link className="st-btn ghost block" to="/login">Espace client</Link>
         </div>
       </div>
 
@@ -231,31 +252,66 @@ function SiteFooter() {
       <div className="st-wrap st-foot-main">
         <div className="st-foot-brand">
           <Link to="/" aria-label="DOUKOU, accueil"><img src="/logo/logo-doukou.png" alt="DOUKOU" /></Link>
-          <p>Suivre chaque dossier client, du devis au dernier paiement.</p>
         </div>
-        <nav aria-label="Produit">
-          <h2>Produit</h2>
-          {NAV.slice(0, 3).map(([label, to]) => <Link key={to} to={to}>{label === 'Produit' ? 'Fonctionnalités' : label}</Link>)}
+        <nav aria-label="Entreprise">
+          <h2>Entreprise</h2>
+          <Link to="/a-propos">À propos de nous</Link>
+          <Link to="/vision">Pourquoi DOUKOU</Link>
           <Link to="/secteurs">Secteurs</Link>
+          <Link to="/tarifs">Tarifs</Link>
+          <Link to="/conseils">Conseils</Link>
         </nav>
-        <nav aria-label="Ressources">
-          <h2>Ressources</h2>
-          {MORE.slice(1).map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}
+        <nav aria-label="Fonctionnalités">
+          <h2>Fonctionnalités</h2>
+          {MODULES.map(([title, href]) => <Link key={href} to={href}>{title}</Link>)}
         </nav>
-        <nav aria-label="Compte">
-          <h2>Compte</h2>
-          <Link to="/login">Connexion</Link>
+        <nav aria-label="Support">
+          <h2>Support</h2>
+          <Link to="/contact">Nous contacter</Link>
+          <Link to="/login">Espace client</Link>
           <Link to="/inscription">Créer un compte</Link>
-          <Link to="/contact">Nous écrire</Link>
+          <Link to="/demo">Démonstration</Link>
+          <Link to="/conseils#faq">Questions fréquentes</Link>
         </nav>
+        <Newsletter />
       </div>
       <div className="st-foot-bottom">
         <div className="st-wrap">
-          <span>© {YEAR} DOUKOU · Libreville</span>
-          <span>Devis, factures et suivi de projets</span>
+          <p>Copyright © <Link to="/">DOUKOU</Link> {YEAR} | Tous droits réservés | Libreville</p>
+          <p><Link to="/contact">Nous contacter</Link> | <Link to="/a-propos">À propos</Link></p>
         </div>
       </div>
     </footer>
+  );
+}
+
+function Newsletter() {
+  const [email, setEmail] = useState('');
+  const [trap, setTrap] = useState('');
+  const [state, setState] = useState({ pending: false, done: '', error: '' });
+
+  async function submit(event) {
+    event.preventDefault();
+    setState({ pending: true, done: '', error: '' });
+    try {
+      const data = await api('/newsletter', { method: 'POST', body: { email, website: trap } });
+      setEmail('');
+      setState({ pending: false, done: data.message, error: '' });
+    } catch (err) {
+      setState({ pending: false, done: '', error: errorText(err) });
+    }
+  }
+
+  return (
+    <form className="st-foot-news" onSubmit={submit}>
+      <h2>Restons connectés !</h2>
+      <p>Recevez les nouveautés de DOUKOU et nos conseils pour mieux suivre vos devis, factures et projets.</p>
+      <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Votre adresse e-mail" aria-label="Votre adresse e-mail" required autoComplete="email" />
+      <input className="st-hp" tabIndex={-1} aria-hidden="true" autoComplete="off" value={trap} onChange={(event) => setTrap(event.target.value)} />
+      <button className="st-btn block" type="submit" disabled={state.pending}>{state.pending ? 'Envoi…' : 'S’abonner'}</button>
+      {state.done ? <small className="ok" role="status">{state.done}</small> : null}
+      {state.error ? <small className="err" role="alert">{state.error}</small> : null}
+    </form>
   );
 }
 
@@ -263,8 +319,9 @@ function SiteFooter() {
    Blocs de page : bandeau titre, gabarit deux colonnes, colonne latérale
    ------------------------------------------------------------------ */
 export function PageBanner({ title, lead, crumb }) {
+  const images = useSiteImages();
   return (
-    <section className="st-banner">
+    <section className="st-banner" style={{ '--banner-photo': `url("${images.banner.src}")` }}>
       <div className="st-wrap">
         <nav className="st-crumbs" aria-label="Fil d’Ariane">
           <Link to="/">Accueil</Link>

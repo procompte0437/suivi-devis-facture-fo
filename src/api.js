@@ -1,5 +1,8 @@
 const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
+/** Adresse de l’API, pour les liens qui quittent le site (connexion Google / GitHub). */
+export const API_BASE = BASE;
+
 export function getToken() {
   return localStorage.getItem('oree_token');
 }
@@ -36,7 +39,7 @@ export async function api(path, { method = 'GET', body } = {}) {
   if (response.status === 401 && path !== '/login') {
     setToken(null);
     if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/inscription')) {
-      const publicPage = ['/', '/vision', '/a-propos', '/fonctionnalites', '/secteurs', '/demo', '/tarifs', '/conseils', '/contact'].includes(window.location.pathname);
+      const publicPage = ['/', '/vision', '/a-propos', '/fonctionnalites', '/secteurs', '/demo', '/tarifs', '/conseils', '/contact', '/connexion-sociale'].includes(window.location.pathname);
       if (!publicPage) window.location.assign('/login');
     }
   }
