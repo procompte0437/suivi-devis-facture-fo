@@ -139,11 +139,10 @@ export function SiteLayout() {
           <div className="st-head-end">
             <button className="st-search-btn" type="button" aria-label="Rechercher sur le site" onClick={() => { setMenu(false); setSearch(true); }}>
               <SiteIcon name="search" />
-              <span>Rechercher</span>
-              <kbd>Ctrl K</kbd>
             </button>
             <Link className="st-signin" to="/login">Connexion</Link>
-            <Link className="st-btn st-pill" to="/inscription">Essayer gratuitement</Link>
+            <Link className="st-btn ghost st-head-quiet" to="/contact">Nous écrire</Link>
+            <Link className="st-btn st-head-cta" to="/inscription">Essayer gratuitement</Link>
           </div>
           <button className="st-burger" type="button" aria-expanded={menu} aria-controls="st-sheet" aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} onClick={() => setMenu((value) => !value)}>
             <span /><span />
@@ -163,8 +162,8 @@ export function SiteLayout() {
           {MORE.map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}
         </div>
         <div className="st-sheet-actions">
-          <Link className="st-btn st-pill block" to="/inscription">Essayer gratuitement</Link>
-          <Link className="st-btn ghost st-pill block" to="/login">Connexion</Link>
+          <Link className="st-btn block" to="/inscription">Essayer gratuitement</Link>
+          <Link className="st-btn ghost block" to="/login">Connexion</Link>
         </div>
       </div>
 
@@ -306,7 +305,7 @@ export function SiteAside({ children }) {
   );
 }
 
-export function PageCta({ title = 'Prêt à essayer DOUKOU ?', text = 'Créez un compte ou parcourez la démonstration.' }) {
+export function PageCta({ title = 'On vous ouvre la porte', text = 'Créez un compte, ou regardez d’abord la démonstration, sans rien installer.' }) {
   return (
     <section className="st-cta">
       <div className="st-wrap">

@@ -19,7 +19,14 @@ function useHouse() {
     payment: company?.payment_note || settings?.payment_note || '',
     footer: company?.footer || settings?.footer || '',
     currency: settings?.currency || 'XAF',
+    logo: company?.logo_url || '',
   };
+}
+
+function HouseMark({ house, round = false, letters = 1 }) {
+  const className = `tpl-logo${round ? ' round' : ''}`;
+  if (house.logo) return <img className={className} src={house.logo} alt="" />;
+  return <div className={className}>{(house.name || 'A').slice(0, letters)}</div>;
 }
 
 function rows(lines) {
@@ -60,8 +67,8 @@ function Classic({ kind, template, number, status, client, title, issue, until, 
       {tone === 'canopee' ? <div className="tpl-wave" /> : null}
       <header className="tpl-classic-top">
         <div>
-          <div className="tpl-logo">{house.name.slice(0, 1)}</div>
-          <strong>Logo</strong>
+          <HouseMark house={house} />
+          {house.logo ? null : <strong>Logo</strong>}
         </div>
         <div className="tpl-classic-title">
           <h2>{doc} N°</h2>
@@ -144,7 +151,7 @@ function Artisans(props) {
   return (
     <article className="paper tpl tpl-artisans">
       <header>
-        <div className="tpl-logo round">{house.name.slice(0, 1)}</div>
+        <HouseMark house={house} round />
         <div>
           <strong>{house.name}</strong>
           <p>{[house.address, house.city].filter(Boolean).join(', ')}</p>
@@ -261,7 +268,7 @@ function Atelier(props) {
     <article className="paper tpl tpl-atelier">
       <header className="tpl-split">
         <div>
-          <div className="tpl-logo">{house.name.slice(0, 1)}</div>
+          <HouseMark house={house} />
           <strong>{house.name}</strong>
           <p>{house.address}</p>
           <p>{[house.postal, house.city, house.country].filter(Boolean).join(' ')}</p>
@@ -435,7 +442,7 @@ function Soleil(props) {
   return (
     <article className="paper tpl tpl-soleil">
       <header className="tpl-split">
-        <div className="tpl-logo round">{house.name.slice(0, 2)}</div>
+        <HouseMark house={house} round letters={2} />
         <div>
           <h2>DEVIS</h2>
           <p>Numéro : {props.number || '—'}</p>

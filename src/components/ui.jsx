@@ -45,16 +45,16 @@ export function Pill({ status, map }) {
   return <span className={`pill tone-${meta.tone}`}>{meta.label}</span>;
 }
 
-export function Field({ label, children, wide }) {
+export function Field({ label, children, wide, erreur = false }) {
   return (
-    <label className={`field${wide ? ' wide' : ''}`}>
+    <label className={`field${wide ? ' wide' : ''}${erreur ? ' erreur' : ''}`}>
       <span>{label}</span>
       {children}
     </label>
   );
 }
 
-export function Modal({ title, onClose, children, wide }) {
+export function Modal({ title, onClose, children, wide, ouvert = false }) {
   useEffect(() => {
     const onKey = (event) => {
       if (event.key === 'Escape') onClose();
@@ -66,7 +66,7 @@ export function Modal({ title, onClose, children, wide }) {
   // Rendu hors de la page : l'animation d'entrée de la page ne décale plus la fenêtre.
   return createPortal(
     <div className="modal-scrim" onMouseDown={onClose}>
-      <div className={`modal${wide ? ' wide' : ''}`} onMouseDown={(event) => event.stopPropagation()} role="dialog">
+      <div className={`modal${wide ? ' wide' : ''}${ouvert ? ' ouvert' : ''}`} onMouseDown={(event) => event.stopPropagation()} role="dialog">
         <header>
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Fermer" type="button">×</button>
@@ -87,11 +87,11 @@ export function Empty({ title, text }) {
   );
 }
 
-export function Loading({ label = 'Chargement', inline = false }) {
+export function Loading({ label = 'Chargement', compact = false }) {
   return (
-    <div className={inline ? 'loading inline' : 'loading'}>
+    <div className={compact ? 'loading compact' : 'loading'} role="status">
       <span className="spin" />
-      <p>{label}</p>
+      {label ? <p>{label}</p> : null}
     </div>
   );
 }

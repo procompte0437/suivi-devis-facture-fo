@@ -71,6 +71,19 @@ export function money(value, currency = 'XAF') {
   return `${new Intl.NumberFormat('fr-FR').format(amount)} ${currency}`;
 }
 
+export function formatDateTime(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return formatDate(value);
+  return date.toLocaleString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function formatDate(value, withYear = true) {
   if (!value) return '—';
   const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);

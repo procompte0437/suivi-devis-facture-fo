@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { MODULES } from './site/data';
 import { PageCta, SiteIcon } from './site/SiteParts';
 
 const PROFILES = {
   entreprise: {
-    label: 'Je gère une entreprise',
-    title: 'Mettez en place votre suivi en quelques étapes.',
+    label: 'Je tiens l’entreprise',
+    title: 'On commence par le compte, le reste suit.',
     items: [
       ['Créer votre compte et votre entreprise', '/inscription'],
       ['Ajouter vos clients et préparer un premier devis', '/fonctionnalites#devis'],
@@ -19,8 +19,8 @@ const PROFILES = {
     ],
   },
   client: {
-    label: 'Je suis client',
-    title: 'Suivez vos dossiers sans avoir à appeler.',
+    label: 'Je suis le client',
+    title: 'Vous voyez où en est votre dossier, sans avoir à appeler.',
     items: [
       ['Se connecter avec le compte fourni par votre prestataire', '/login'],
       ['Consulter vos devis et les accepter ou les refuser en ligne', '/fonctionnalites#espace-client'],
@@ -31,26 +31,21 @@ const PROFILES = {
   },
 };
 
+const WASHES = ['sage', 'sand', 'leaf', 'mist', 'foam', 'ink'];
+
 const TRADES = [
-  ['/home/metier-platre.jpg', 'Artisans', 'Devis, acomptes et étapes de chaque intervention.', '/secteurs#artisans', 'Menuiserie, plâtrerie'],
-  ['/home/metier-peinture.jpg', 'Agences et bureaux', 'Plusieurs clients suivis en parallèle, chacun avec ses pièces.', '/secteurs#agences', 'Conseil, communication'],
-  ['/home/metier-plomberie.jpg', 'BTP et chantiers', 'Étapes, budget et planning des travaux.', '/secteurs#btp', 'Gros œuvre, réseaux'],
+  ['/home/metier-platre.jpg', 'Artisans', 'Le devis part, l’acompte est suivi, et le client voit les étapes.', '/secteurs#artisans', 'Menuiserie, plâtrerie'],
+  ['/home/metier-peinture.jpg', 'Agences et bureaux', 'Plusieurs clients, chacun avec son dossier, sans les mélanger.', '/secteurs#agences', 'Conseil, communication'],
+  ['/home/metier-plomberie.jpg', 'BTP et chantiers', 'Les dates, le budget et le planning tiennent sur la même page.', '/secteurs#btp', 'Gros œuvre, réseaux'],
 ];
 
 export function Home() {
   const [stats, setStats] = useState(null);
   const [profile, setProfile] = useState('entreprise');
-  const [lead, setLead] = useState({ name: '', email: '' });
-  const navigate = useNavigate();
 
   useEffect(() => {
     api('/stats').then(setStats).catch(() => setStats(null));
   }, []);
-
-  function start(event) {
-    event.preventDefault();
-    navigate('/inscription', { state: { name: lead.name.trim(), email: lead.email.trim() } });
-  }
 
   const current = PROFILES[profile];
 
@@ -59,73 +54,80 @@ export function Home() {
       <section className="st-hero">
         <div className="st-wrap">
           <div>
-            <h1>Vos devis, factures et <mark>projets clients</mark> au même endroit</h1>
-            <ul className="st-hero-points">
-              <li><span><b>Créez</b> vos devis et faites-les valider en ligne par le client</span></li>
-              <li><span><b>Facturez</b> sans ressaisie et suivez chaque paiement</span></li>
-              <li><span><b>Publiez</b> l’avancement des projets, visible par vos clients</span></li>
-            </ul>
-            <form className="st-hero-form" onSubmit={start}>
-              <input aria-label="Votre nom" placeholder="Votre nom" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} autoComplete="name" />
-              <input aria-label="Votre e-mail" type="email" placeholder="Votre e-mail" value={lead.email} onChange={(event) => setLead({ ...lead, email: event.target.value })} autoComplete="email" />
-              <button className="st-btn brass" type="submit">Créer mon compte</button>
-            </form>
-            <p className="st-hero-note">Gratuit pendant la phase de test. Vous pouvez aussi <Link to="/demo" style={{ color: 'var(--st-forest)', fontWeight: 600 }}>essayer la démonstration</Link> sans vous inscrire.</p>
+            <p className="st-hello">DOUKOU</p>
+            <h1>Vos devis, vos factures et vos projets, au même endroit.</h1>
+            <p className="st-hero-lead">Vous préparez le devis. Votre client le lit et répond. La facture, les paiements et le chantier restent dans le même dossier.</p>
+            <div className="st-hero-actions">
+              <Link className="st-btn" to="/demo">Regarder la démo</Link>
+              <Link className="st-btn ghost" to="/inscription">Essayer gratuitement</Link>
+            </div>
+            <p className="st-hero-note">Rien à installer. C’est gratuit pendant la phase de test.</p>
           </div>
 
-          <div className="st-stack" aria-hidden="true">
-            <div className="st-sheet s1">
-              <header><span>DEV-2026-0012</span><b>Accepté</b></header>
-              <h3>Signalétique intérieure</h3>
-              <table>
-                <tbody>
-                  <tr><td>Plan de signes</td><td>780 000</td></tr>
-                  <tr><td>Fabrication et pose</td><td>2 600 000</td></tr>
-                </tbody>
-                <tfoot><tr><td>Total TTC</td><td>3 988 400 F</td></tr></tfoot>
-              </table>
-            </div>
-            <div className="st-sheet s2">
-              <header><span>FAC-2026-0009</span><b style={{ background: 'var(--st-brass)' }}>Partielle</b></header>
-              <h3>Reste à payer</h3>
-              <div className="st-bar"><span style={{ width: '40%' }} /></div>
-              <small style={{ color: 'var(--st-muted)' }}>1 595 360 F reçus sur 3 988 400 F</small>
-            </div>
-            <div className="st-sheet s3">
-              <header><span>PRJ-002</span><b>45 %</b></header>
-              <h3>Suivi du projet</h3>
-              <ul className="st-steps-mini">
-                <li><i />Relevé des espaces<small>fait</small></li>
-                <li><i />Plan de signes<small>fait</small></li>
-                <li><i className="now" />Fabrication<small>en cours</small></li>
-                <li><i className="todo" />Pose<small>25 nov.</small></li>
-              </ul>
-            </div>
-          </div>
+          <figure className="st-shot">
+            <span className="st-rings" aria-hidden="true" />
+            <img src="/home/hero-atelier.jpg" alt="Artisan au travail dans son atelier" />
+            <Link className="st-play" to="/demo" aria-label="Regarder la démonstration">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5-8-4.5z" fill="currentColor" /></svg>
+            </Link>
+            <span className="st-dots" aria-hidden="true" />
+          </figure>
         </div>
       </section>
 
-      <section className="st-section">
-        <div className="st-wrap">
-          <header className="st-section-title">
-            <h2>Un seul outil pour suivre chaque dossier client</h2>
-            <p>Du premier devis au dernier paiement, l’équipe et le client voient les mêmes informations, chacun selon ses droits.</p>
-          </header>
-          <div className="st-pills" role="tablist" aria-label="Votre profil">
-            {Object.entries(PROFILES).map(([key, item]) => (
-              <button key={key} type="button" role="tab" aria-selected={profile === key} className={profile === key ? 'on' : ''} onClick={() => setProfile(key)}>
-                <SiteIcon name="check" />
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <div className="st-checks" role="tabpanel">
-            <h3>{current.title}</h3>
-            <ul>
-              {current.items.map(([text, href]) => (
-                <li key={text}><Link to={href}><SiteIcon name="check" />{text}</Link></li>
+      <section className="st-stage">
+        <div className="st-wrap st-stage-grid">
+          <div>
+            <p className="st-kicker">Votre place</p>
+            <h2>Dites-nous de quel côté vous êtes</h2>
+            <p className="st-hero-lead">L’entreprise prépare le dossier. Le client le consulte et répond. Chacun voit ce qui le concerne.</p>
+            <div className="st-pills" role="tablist" aria-label="Votre profil">
+              {Object.entries(PROFILES).map(([key, item]) => (
+                <button key={key} type="button" role="tab" aria-selected={profile === key} className={profile === key ? 'on' : ''} onClick={() => setProfile(key)}>
+                  <SiteIcon name="check" />
+                  {item.label}
+                </button>
               ))}
-            </ul>
+            </div>
+            <div className="st-checks" role="tabpanel">
+              <h3>{current.title}</h3>
+              <ul>
+                {current.items.map(([text, href]) => (
+                  <li key={text}><Link to={href}><SiteIcon name="check" />{text}</Link></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="st-plinth" aria-hidden="true">
+            <div className="st-stack">
+              <div className="st-sheet s1">
+                <header><span>DEV-2026-0012</span><b>Accepté</b></header>
+                <h3>Signalétique intérieure</h3>
+                <table>
+                  <tbody>
+                    <tr><td>Plan de signes</td><td>780 000</td></tr>
+                    <tr><td>Fabrication et pose</td><td>2 600 000</td></tr>
+                  </tbody>
+                  <tfoot><tr><td>Total TTC</td><td>3 988 400 F</td></tr></tfoot>
+                </table>
+              </div>
+              <div className="st-sheet s2">
+                <header><span>FAC-2026-0009</span><b>Partielle</b></header>
+                <h3>Reste à payer</h3>
+                <div className="st-bar"><span style={{ width: '40%' }} /></div>
+                <small>1 595 360 F reçus sur 3 988 400 F</small>
+              </div>
+              <div className="st-sheet s3">
+                <header><span>PRJ-002</span><b>45 %</b></header>
+                <h3>Suivi du projet</h3>
+                <ul className="st-steps-mini">
+                  <li><i />Relevé des espaces<small>fait</small></li>
+                  <li><i />Plan de signes<small>fait</small></li>
+                  <li><i className="now" />Fabrication<small>en cours</small></li>
+                  <li><i className="todo" />Pose<small>25 nov.</small></li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -133,13 +135,13 @@ export function Home() {
       <section className="st-section tint">
         <div className="st-wrap">
           <header className="st-section-title">
-            <h2>Les modules du portail</h2>
-            <p>Six modules reliés entre eux : rien n’est saisi deux fois.</p>
+            <h2>Tout ce qui tient dans un dossier</h2>
+            <p>Six portes, reliées. Une ligne saisie sur le devis n’est pas retapée sur la facture.</p>
           </header>
-          <div className="st-cards">
-            {MODULES.map(([title, href, icon, text]) => (
+          <div className="st-cards st-services">
+            {MODULES.map(([title, href, icon, text], index) => (
               <Link className="st-card" to={href} key={href}>
-                <span className="ico"><SiteIcon name={icon} /></span>
+                <span className={`ico ${WASHES[index % WASHES.length]}`}><SiteIcon name={icon} /></span>
                 <h3>{title}</h3>
                 <p>{text}</p>
                 <span className="more">En savoir plus →</span>
@@ -152,8 +154,8 @@ export function Home() {
       <section className="st-section">
         <div className="st-wrap">
           <header className="st-section-title">
-            <h2>Le bureau, comme dans l’espace équipe</h2>
-            <p>Indicateurs du mois, échéances encore ouvertes et avancement des projets. La même lecture que dans le tableau de bord.</p>
+            <h2>Ce que l’équipe voit en arrivant</h2>
+            <p>Le mois en cours, les factures encore ouvertes, et les chantiers qui avancent. C’est le tableau de bord, en plus simple.</p>
           </header>
           <div className="st-desk" aria-label="Aperçu du tableau de bord">
             <div className="st-kpis">
@@ -184,7 +186,7 @@ export function Home() {
               </article>
             </div>
           </div>
-          <p className="st-desk-link"><Link to="/demo">Ouvrir cette lecture dans la démonstration</Link></p>
+          <p className="st-desk-link"><Link to="/demo">Entrer et regarder par vous-même</Link></p>
         </div>
       </section>
 
@@ -194,9 +196,9 @@ export function Home() {
             <h2>Comment ça marche</h2>
           </header>
           <ol className="st-flow">
-            <li><strong>Le commercial envoie le devis</strong><span>Lignes, quantités, prix : le total est calculé.</span></li>
-            <li><strong>Le client l’accepte en ligne</strong><span>La décision est datée et signée de son nom.</span></li>
-            <li><strong>Facture, paiements, projet</strong><span>Le comptable facture, le chef de projet publie l’avancement.</span></li>
+            <li><strong>Le devis part</strong><span>Les lignes et le total sont déjà calculés.</span></li>
+            <li><strong>Le client répond</strong><span>Il accepte ou refuse, depuis son espace.</span></li>
+            <li><strong>Le chantier suit</strong><span>La facture, les paiements et le planning restent liés.</span></li>
           </ol>
         </div>
       </section>
@@ -214,8 +216,8 @@ export function Home() {
       <section className="st-section">
         <div className="st-wrap">
           <header className="st-section-title">
-            <h2>Pour quels métiers ?</h2>
-            <p>Pour les entreprises de services et de travaux qui vendent sur devis.</p>
+            <h2>Pour qui ?</h2>
+            <p>Les ateliers, les bureaux et les chantiers qui vendent un travail sur devis.</p>
           </header>
           <div className="st-cards">
             {TRADES.map(([src, title, text, href, meta]) => (

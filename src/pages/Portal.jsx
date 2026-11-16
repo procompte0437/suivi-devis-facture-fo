@@ -1,36 +1,40 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
-import { api, errorText } from '../api';
+import { api, errorText, telechargerFichier } from '../api';
 import { useAuth } from '../auth';
-import { PrintDocument } from '../components/DocumentPicker';
 import { Paper } from '../components/Paper';
-import { Banner, Loading, Modal, Pill } from '../components/ui';
+import { Banner, Modal, Pill } from '../components/ui';
+import { BarreListe, ChargementPourcentage, PaginationListe, useListePaginee } from '../components/TableauDonnees';
 import { formatDate, INVOICE_STATUS, METHODS, money, PROJECT_STATUS, QUOTE_STATUS } from '../format';
 
 // Espace client : consultation des devis, factures et projets du client connecté,
 // et réponse aux devis envoyés (UC06, UC12).
 
 export function PortalLayout() {
-  const { user, company, logout } = useAuth();
+  const { user, company, logout, ready } = useAuth();
   return (
     <div className="portal">
       <header className="portal-top no-print">
         <Link to="/espace-client" className="portal-brand">
-          <img src="/logo/logo-doukou-clair.png" alt="DOUKOU" />
+          <img src="/logo/logo-doukou-clair.png" alt="" />
+          <span className="platform-mark">
+            <strong>DOUKOU</strong>
+            <span>Plateforme</span>
+          </span>
         </Link>
         <nav>
           <NavLink to="/espace-client" end>Mes documents</NavLink>
         </nav>
         <div className="portal-me">
           <span>
-            <strong>{user?.client?.company || user?.name}</strong>
+            <strong>{user?.client?.company || user?.name || 'Espace client'}</strong>
             <small>{user?.name}</small>
           </span>
           <button className="btn btn-tiny" type="button" onClick={logout}>Se déconnecter</button>
         </div>
       </header>
       <div className="portal-body">
-        {company ? <p className="portal-from no-print">Prestataire : {company.name}</p> : null}
+        {ready && company ? <p className="portal-from no-print">Prestataire : {company.name}</p> : null}
         <Outlet />
       </div>
     </div>
@@ -45,8 +49,33 @@ export function PortalHome() {
     api('/portal').then(setData).catch((err) => setError(errorText(err)));
   }, []);
 
-  if (error) return <Banner>{error}</Banner>;
-  if (!data) return <Loading inline label="Chargement de vos documents" />;
+  if (error && !data) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker">Espace client</p>
+            <h1>Mes documents</h1>
+          </div>
+        </header>
+        <Banner>{error}</Banner>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker">Espace client</p>
+            <h1>Mes documents</h1>
+          </div>
+        </header>
+        <ChargementPourcentage actif libelle="Chargement de vos documents" />
+      </div>
+    );
+  }
 
   const waiting = data.quotes.filter((quote) => quote.display_status === 'envoye');
 
@@ -127,9 +156,31 @@ export function PortalHome() {
 }
 
 function DocTable({ rows, base, status, dateLabel, dateKey, balance, empty }) {
-  if (!rows.length) return <p className="muted">{empty}</p>;
+  const [recherche, setRecherche] = useState('');
+  const [filtre, setFiltre] = useState('');
+  const options = [{ valeur: '', libelle: 'Tous les statuts' }, ...Object.entries(status).map(([valeur, meta]) => ({ valeur, libelle: meta.label }))];
+  const mot = recherche.trim().toLowerCase();
+  const filtres = rows.filter((row) => {
+    const statutOk = !filtre || row.display_status === filtre || row.status === filtre;
+    const texte = `${row.number} ${row.title}`.toLowerCase();
+    return statutOk && (!mot || texte.includes(mot));
+  });
+  const liste = useListePaginee(filtres, 5);
+
   return (
     <div className="card table-wrap">
+      <BarreListe
+        libelleFiltre="Statut"
+        optionsFiltre={options}
+        filtre={filtre}
+        onFiltre={setFiltre}
+        recherche={recherche}
+        onRecherche={setRecherche}
+        placeholderRecherche="Numéro, objet"
+        taille={liste.taille}
+        onTaille={liste.changerTaille}
+        onActualiser={() => { setRecherche(''); setFiltre(''); }}
+      />
       <table>
         <thead>
           <tr>
@@ -139,7 +190,7 @@ function DocTable({ rows, base, status, dateLabel, dateKey, balance, empty }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {liste.visibles.map((row) => (
             <tr key={row.id}>
               <td><Link to={`${base}/${row.id}`}><b>{row.number}</b></Link></td>
               <td>{row.title}</td>
@@ -150,8 +201,10 @@ function DocTable({ rows, base, status, dateLabel, dateKey, balance, empty }) {
               <td><Pill status={row.display_status} map={status} /></td>
             </tr>
           ))}
+          {liste.total === 0 ? <tr><td className="muted" colSpan={balance ? 7 : 6}>{empty}</td></tr> : null}
         </tbody>
       </table>
+      <PaginationListe page={liste.page} pages={liste.pages} total={liste.total} aller={liste.aller} />
     </div>
   );
 }
@@ -164,7 +217,7 @@ export function PortalQuote() {
   const [decision, setDecision] = useState(null);
   const [note, setNote] = useState('');
   const [pending, setPending] = useState(false);
-  const [printing, setPrinting] = useState(false);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
 
   useEffect(() => {
     api(`/portal/quotes/${id}`).then(setQuote).catch((err) => setError(errorText(err)));
@@ -185,8 +238,32 @@ export function PortalQuote() {
     }
   }
 
-  if (error && !quote) return <Banner>{error}</Banner>;
-  if (!quote) return <Loading inline label="Chargement du devis" />;
+  if (error && !quote) {
+    return (
+      <div className="page">
+        <header className="page-head no-print">
+          <div>
+            <p className="kicker"><Link to="/espace-client">Mes documents</Link> · devis</p>
+            <h1>Devis</h1>
+          </div>
+        </header>
+        <Banner>{error}</Banner>
+      </div>
+    );
+  }
+  if (!quote) {
+    return (
+      <div className="page">
+        <header className="page-head no-print">
+          <div>
+            <p className="kicker"><Link to="/espace-client">Mes documents</Link> · devis</p>
+            <h1>Devis</h1>
+          </div>
+        </header>
+        <div className="sheet-wrap portal-sheet"><div className="card"><ChargementPourcentage actif libelle="Chargement du devis" /></div></div>
+      </div>
+    );
+  }
 
   const open = quote.display_status === 'envoye';
 
@@ -198,7 +275,12 @@ export function PortalQuote() {
           <h1>{quote.number}</h1>
         </div>
         <div className="actions">
-          <button className="btn" type="button" onClick={() => setPrinting(true)}>Télécharger en PDF</button>
+          <button className="btn" type="button" disabled={pdfEnCours} onClick={async () => {
+            setPdfEnCours(true);
+            try { await telechargerFichier(`/portal/quotes/${id}/pdf`); }
+            catch (err) { setError(errorText(err)); }
+            finally { setPdfEnCours(false); }
+          }}>{pdfEnCours ? 'Préparation du PDF…' : 'Télécharger en PDF'}</button>
           {open ? (
             <>
               <button className="btn btn-danger" type="button" onClick={() => setDecision('refuse')}>Refuser</button>
@@ -234,7 +316,6 @@ export function PortalQuote() {
           notes={quote.notes}
           template={quote.template}
         />
-        {printing ? <PrintDocument paper={{ number: quote.number, status: quote.status, client: quote.client, title: quote.title, issue: quote.issue_date, until: quote.valid_until, lines: quote.lines, discount: quote.discount, taxRate: quote.tax_rate, notes: quote.notes }} kind="devis" template={quote.template} onDone={() => setPrinting(false)} /> : null}
       </div>
 
       {decision ? (
@@ -269,14 +350,39 @@ export function PortalInvoice() {
   const { id } = useParams();
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState('');
-  const [printing, setPrinting] = useState(false);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
 
   useEffect(() => {
     api(`/portal/invoices/${id}`).then(setInvoice).catch((err) => setError(errorText(err)));
   }, [id]);
 
-  if (error) return <Banner>{error}</Banner>;
-  if (!invoice) return <Loading inline label="Chargement de la facture" />;
+  if (error && !invoice) {
+    return (
+      <div className="page">
+        <header className="page-head no-print">
+          <div>
+            <p className="kicker"><Link to="/espace-client">Mes documents</Link> · facture</p>
+            <h1>Facture</h1>
+          </div>
+        </header>
+        <Banner>{error}</Banner>
+      </div>
+    );
+  }
+  if (!invoice) {
+    return (
+      <div className="page">
+        <header className="page-head no-print">
+          <div>
+            <p className="kicker"><Link to="/espace-client">Mes documents</Link> · facture</p>
+            <h1>Facture</h1>
+          </div>
+        </header>
+        <section className="card"><ChargementPourcentage actif libelle="Chargement du récapitulatif" /></section>
+        <div className="sheet-wrap portal-sheet"><div className="card"><ChargementPourcentage actif libelle="Chargement de la facture" /></div></div>
+      </div>
+    );
+  }
 
   const methods = Object.fromEntries(METHODS);
 
@@ -289,7 +395,12 @@ export function PortalInvoice() {
         </div>
         <div className="actions">
           <Pill status={invoice.display_status} map={INVOICE_STATUS} />
-          <button className="btn" type="button" onClick={() => setPrinting(true)}>Télécharger en PDF</button>
+          <button className="btn" type="button" disabled={pdfEnCours} onClick={async () => {
+            setPdfEnCours(true);
+            try { await telechargerFichier(`/portal/invoices/${id}/pdf`); }
+            catch (err) { setError(errorText(err)); }
+            finally { setPdfEnCours(false); }
+          }}>{pdfEnCours ? 'Préparation du PDF…' : 'Télécharger en PDF'}</button>
         </div>
       </header>
       <div className="card no-print" style={{ marginBottom: 14 }}>
@@ -324,7 +435,6 @@ export function PortalInvoice() {
           notes={invoice.notes}
           template={invoice.template}
         />
-        {printing ? <PrintDocument paper={{ number: invoice.number, status: invoice.status, client: invoice.client, title: invoice.title, issue: invoice.issue_date, until: invoice.due_date, lines: invoice.lines, discount: invoice.discount, taxRate: invoice.tax_rate, notes: invoice.notes }} kind="facture" template={invoice.template} onDone={() => setPrinting(false)} /> : null}
       </div>
     </div>
   );
@@ -339,8 +449,35 @@ export function PortalProject() {
     api(`/portal/projects/${id}`).then(setProject).catch((err) => setError(errorText(err)));
   }, [id]);
 
-  if (error) return <Banner>{error}</Banner>;
-  if (!project) return <Loading inline label="Chargement du projet" />;
+  if (error && !project) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker"><Link to="/espace-client">Mes documents</Link></p>
+            <h1>Projet</h1>
+          </div>
+        </header>
+        <Banner>{error}</Banner>
+      </div>
+    );
+  }
+  if (!project) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker"><Link to="/espace-client">Mes documents</Link></p>
+            <h1>Projet</h1>
+          </div>
+        </header>
+        <div className="portal-project">
+          <div className="card"><h2>Avancement</h2><ChargementPourcentage actif libelle="Chargement du projet" /></div>
+          <div className="card"><h2>Suivi</h2><ChargementPourcentage actif libelle="Chargement du suivi" /></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">

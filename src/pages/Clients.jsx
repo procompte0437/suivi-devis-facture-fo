@@ -3,9 +3,20 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorText } from '../api';
 import { useAuth } from '../auth';
 import { CLIENT_STATUS, INVOICE_STATUS, money, PROJECT_STATUS, QUOTE_STATUS, tintFor } from '../format';
-import { Banner, Field, Loading, Modal, Pill } from '../components/ui';
+import { Banner, Field, Modal, Pill } from '../components/ui';
+import { ActionsLigne, BarreListe, ChargementPourcentage, IconeInformation, ListePaginee, PaginationListe, useListePaginee } from '../components/TableauDonnees';
 
-const EMPTY = { company: '', contact_name: '', email: '', phone: '', address: '', city: 'Libreville', country: 'Gabon', tax_id: '', notes: '', status: 'prospect' };
+const EMPTY = {
+  kind: 'entreprise', societe_id: '', company: '', contact_name: '', email: '', phone: '',
+  address: '', city: 'Libreville', country: 'Gabon', tax_id: '', notes: '', status: 'prospect',
+};
+const CLIENT_FIELDS = ['kind', 'societe_id', 'company', 'contact_name', 'email', 'phone', 'address', 'city', 'country', 'tax_id', 'notes', 'status'];
+
+function listed(items, current, key = 'label') {
+  const values = (items || []).map((item) => item[key]).filter(Boolean);
+  if (current && !values.includes(current)) values.unshift(current);
+  return values;
+}
 
 export default function Clients() {
   const { id } = useParams();
@@ -19,24 +30,34 @@ export default function Clients() {
   const [error, setError] = useState('');
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ficheEnCours, setFicheEnCours] = useState(false);
+  const [refs, setRefs] = useState(null);
 
   function loadList() {
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     if (status) params.set('status', status);
-    return api(`/clients?${params.toString()}`).then(setRows);
+    setLoading(true);
+    return api(`/clients?${params.toString()}`)
+      .then(setRows)
+      .catch((err) => setError(errorText(err)))
+      .finally(() => setLoading(false));
   }
 
+  useEffect(() => { loadList(); }, [status]);
+
   useEffect(() => {
-    loadList().catch((err) => setError(errorText(err))).finally(() => setLoading(false));
-  }, [status]);
+    api('/referentiel').then(setRefs).catch(() => setRefs(null));
+  }, []);
 
   useEffect(() => {
     if (!id) {
       setDetail(null);
       return;
     }
-    api(`/clients/${id}`).then(setDetail).catch((err) => setError(errorText(err)));
+    setDetail(null);
+    setFicheEnCours(true);
+    api(`/clients/${id}`).then(setDetail).catch((err) => setError(errorText(err))).finally(() => setFicheEnCours(false));
   }, [id]);
 
   function edit(client) {
@@ -47,7 +68,11 @@ export default function Clients() {
     event.preventDefault();
     setError('');
     try {
-      const payload = { ...form };
+      const payload = {};
+      CLIENT_FIELDS.forEach((key) => { payload[key] = form[key] || null; });
+      payload.kind = form.kind || 'entreprise';
+      payload.status = form.status;
+      if (payload.kind === 'individuel') payload.company = payload.contact_name;
       const saved = form.id
         ? await api(`/clients/${form.id}`, { method: 'PUT', body: payload })
         : await api('/clients', { method: 'POST', body: payload });
@@ -60,52 +85,108 @@ export default function Clients() {
   }
 
   const client = detail?.client;
+  const statuses = refs?.statut?.length ? refs.statut : [
+    { code: 'prospect', label: 'Prospect' },
+    { code: 'actif', label: 'Actif' },
+    { code: 'veille', label: 'En veille' },
+  ];
+  const statusMap = { ...CLIENT_STATUS };
+  statuses.forEach((item) => {
+    statusMap[item.code] = { label: item.label, tone: CLIENT_STATUS[item.code]?.tone || 'mute' };
+  });
+  const societes = refs?.societe || [];
+  const optionsStatut = [{ valeur: '', libelle: 'Tous' }, ...statuses.map((item) => ({ valeur: item.code, libelle: item.label }))];
+  const liste = useListePaginee(rows, 10);
+
+  async function supprimer(clientCible) {
+    if (!window.confirm(`Supprimer ${clientCible.company || clientCible.contact_name} ?`)) return;
+    try {
+      await api(`/clients/${clientCible.id}`, { method: 'DELETE' });
+      if (String(id) === String(clientCible.id)) navigate('/clients');
+      await loadList();
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+
+  function applySociete(id) {
+    const item = societes.find((row) => String(row.id) === String(id));
+    if (!item) {
+      setForm({ ...form, societe_id: '', company: '' });
+      return;
+    }
+    const meta = item.meta || {};
+    setForm({
+      ...form,
+      societe_id: item.id,
+      company: item.label,
+      contact_name: meta.contact_name || form.contact_name,
+      email: meta.email || form.email || '',
+      phone: meta.phone || form.phone || '',
+      address: meta.address || form.address || '',
+      city: meta.city || form.city || '',
+      tax_id: meta.tax_id || form.tax_id || '',
+    });
+  }
 
   return (
     <div className="page">
       <header className="page-head">
         <div>
           <p className="kicker">Gestion</p>
-          <h1>Clients</h1>
-          <p className="lead">Fiches clients, avec leurs devis, factures et projets.</p>
+          <div className="titre-avec-info">
+            <h1>Clients</h1>
+            <IconeInformation titre="Clients" texte="Fiches clients, avec leurs devis, factures et projets. La recherche (société, contact, ville) est dans le filtre de statut. Un client qui a déjà des pièces ne peut pas être supprimé : passez-le en veille." />
+          </div>
         </div>
         {can('clients') ? <button className="btn btn-primary" type="button" onClick={() => edit(null)}>Nouveau client</button> : null}
       </header>
       <Banner>{error}</Banner>
       <div className="directory-layout" style={{ marginTop: 14 }}>
         <aside className="directory">
-          <input className="search-inline" placeholder="Société, contact, ville" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') loadList(); }} />
-          <div className="filters" style={{ marginTop: 10 }}>
-            {[['', 'Tous'], ['actif', 'Actifs'], ['prospect', 'Prospects'], ['veille', 'Veille']].map(([value, label]) => (
-              <button key={label} className={`chip${status === value ? ' on' : ''}`} type="button" onClick={() => setStatus(value)}>{label}</button>
-            ))}
-          </div>
-          {loading ? <p className="muted">Chargement…</p> : null}
-          {rows.map((row) => (
+          <BarreListe
+            libelleFiltre="Statut"
+            optionsFiltre={optionsStatut}
+            filtre={status}
+            onFiltre={setStatus}
+            recherche={query}
+            onRecherche={setQuery}
+            onValiderRecherche={() => loadList()}
+            placeholderRecherche="Société, contact, ville"
+            taille={liste.taille}
+            onTaille={liste.changerTaille}
+            chargement={loading}
+            onActualiser={() => loadList()}
+          />
+          {loading ? <ChargementPourcentage actif libelle="Chargement des clients" /> : liste.visibles.map((row) => (
             <button key={row.id} type="button" className={`person${String(row.id) === String(id) ? ' on' : ''}`} onClick={() => navigate(`/clients/${row.id}`)}>
-              <span className="avatar" style={{ background: tintFor(row.company) }}>{row.company.slice(0, 1)}</span>
+              <span className="avatar" style={{ background: tintFor(row.company || row.contact_name) }}>{(row.company || row.contact_name || '?').slice(0, 1)}</span>
               <span>
-                <b>{row.company}</b>
-                <small>{row.city} · {row.code}</small>
+                <b>{row.kind === 'individuel' ? row.contact_name : row.company}</b>
+                <small>{[row.kind === 'individuel' ? 'Particulier' : null, row.city, row.code].filter(Boolean).join(' · ')}</small>
               </span>
             </button>
           ))}
+          <PaginationListe page={liste.page} pages={liste.pages} total={liste.total} aller={liste.aller} />
         </aside>
         <section className="dossier">
-          {!client ? <p className="lead">Sélectionnez un client dans la liste.</p> : (
+          {ficheEnCours ? <ChargementPourcentage actif libelle="Chargement de la fiche" /> : !client ? <p className="muted">Sélectionnez un client dans la liste.</p> : (
             <>
               <div className="dossier-top">
                 <div style={{ display: 'flex', gap: 14 }}>
                   <span className="monogram" style={{ background: tintFor(client.company) }}>{client.company.slice(0, 1)}</span>
                   <div>
-                    <p className="kicker">{client.code}</p>
-                    <h2>{client.company}</h2>
-                    <p className="lead">{client.contact_name} · {client.city}</p>
+                    <p className="kicker">{client.code} · {client.kind === 'individuel' ? 'Particulier' : 'Entreprise'}</p>
+                    <h2>{client.kind === 'individuel' ? client.contact_name : client.company}</h2>
+                    <p className="lead">{client.kind === 'individuel' ? client.city : `${client.contact_name} · ${client.city}`}</p>
                   </div>
                 </div>
                 <div className="actions">
-                  <Pill status={client.status} map={CLIENT_STATUS} />
-                  <button className="btn" type="button" onClick={() => edit(client)}>Modifier</button>
+                  <Pill status={client.status} map={statusMap} />
+                  <ActionsLigne
+                    onModifier={can('clients') ? () => edit(client) : null}
+                    onSupprimer={can('clients') ? () => supprimer(client) : null}
+                  />
                 </div>
               </div>
               <div className="stats">
@@ -119,27 +200,37 @@ export default function Clients() {
                 <div>
                   <h3>Devis</h3>
                   <div className="link-list">
-                    {detail.quotes.map((quote) => (
-                      <Link key={quote.id} to={`/devis/${quote.id}`}><span>{quote.number}<br /><small className="muted">{quote.title}</small></span><Pill status={quote.display_status} map={QUOTE_STATUS} /></Link>
-                    ))}
-                    {detail.quotes.length === 0 ? <p className="muted">Aucun devis.</p> : null}
+                    <ListePaginee
+                      lignes={detail.quotes}
+                      vide="Aucun devis."
+                      rendu={(quote) => (
+                        <Link key={quote.id} to={`/devis/${quote.id}`}><span>{quote.number}<br /><small className="muted">{quote.title}</small></span><Pill status={quote.display_status} map={QUOTE_STATUS} /></Link>
+                      )}
+                    />
                   </div>
                 </div>
                 <div>
                   <h3>Factures</h3>
                   <div className="link-list">
-                    {detail.invoices.map((invoice) => (
-                      <Link key={invoice.id} to={`/factures/${invoice.id}`}><span>{invoice.number}<br /><small className="muted">{money(invoice.total, currency)}</small></span><Pill status={invoice.display_status} map={INVOICE_STATUS} /></Link>
-                    ))}
-                    {detail.invoices.length === 0 ? <p className="muted">Aucune facture.</p> : null}
+                    <ListePaginee
+                      lignes={detail.invoices}
+                      vide="Aucune facture."
+                      rendu={(invoice) => (
+                        <Link key={invoice.id} to={`/factures/${invoice.id}`}><span>{invoice.number}<br /><small className="muted">{money(invoice.total, currency)}</small></span><Pill status={invoice.display_status} map={INVOICE_STATUS} /></Link>
+                      )}
+                    />
                   </div>
                 </div>
               </div>
               <h3 style={{ marginTop: 18 }}>Projets</h3>
               <div className="link-list">
-                {detail.projects.map((project) => (
-                  <Link key={project.id} to={`/projets/${project.id}`}><span>{project.name}</span><Pill status={project.status} map={PROJECT_STATUS} /></Link>
-                ))}
+                <ListePaginee
+                  lignes={detail.projects}
+                  vide="Aucun projet."
+                  rendu={(project) => (
+                    <Link key={project.id} to={`/projets/${project.id}`}><span>{project.name}</span><Pill status={project.status} map={PROJECT_STATUS} /></Link>
+                  )}
+                />
               </div>
             </>
           )}
@@ -150,16 +241,43 @@ export default function Clients() {
         <Modal title={form.id ? 'Modifier le client' : 'Nouveau client'} onClose={() => setForm(null)}>
           <form className="stack" onSubmit={save}>
             <div className="fields">
-              <Field label="Société" wide><input value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} required /></Field>
-              <Field label="Contact" wide><input value={form.contact_name} onChange={(event) => setForm({ ...form, contact_name: event.target.value })} required /></Field>
+              <Field label="Type">
+                <select value={form.kind || 'entreprise'} onChange={(event) => setForm({ ...form, kind: event.target.value, societe_id: event.target.value === 'individuel' ? '' : form.societe_id })}>
+                  <option value="entreprise">Entreprise</option>
+                  <option value="individuel">Individuel</option>
+                </select>
+              </Field>
+              <Field label="Statut">
+                <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} required>
+                  {statuses.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+                </select>
+              </Field>
+              {form.kind === 'individuel' ? (
+                <Field label="Nom" wide><input value={form.contact_name} onChange={(event) => setForm({ ...form, contact_name: event.target.value, company: event.target.value })} required /></Field>
+              ) : (
+                <Field label="Société" wide>
+                  <select value={form.societe_id || ''} onChange={(event) => applySociete(event.target.value)} required>
+                    <option value="">Choisir une société</option>
+                    {societes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                  {societes.length === 0 ? <small className="muted">Aucune société : ajoutez-les dans le <Link to="/referentiel">référentiel</Link>.</small> : null}
+                </Field>
+              )}
+              {form.kind === 'entreprise' ? (
+                <Field label="Contact" wide><input value={form.contact_name} onChange={(event) => setForm({ ...form, contact_name: event.target.value })} required /></Field>
+              ) : null}
               <Field label="E-mail"><input type="email" value={form.email || ''} onChange={(event) => setForm({ ...form, email: event.target.value })} /></Field>
               <Field label="Téléphone"><input value={form.phone || ''} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></Field>
-              <Field label="Ville"><input value={form.city || ''} onChange={(event) => setForm({ ...form, city: event.target.value })} /></Field>
-              <Field label="Statut">
-                <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
-                  <option value="prospect">Prospect</option>
-                  <option value="actif">Actif</option>
-                  <option value="veille">En veille</option>
+              <Field label="Ville">
+                <select value={form.city || ''} onChange={(event) => setForm({ ...form, city: event.target.value })}>
+                  <option value="">Choisir</option>
+                  {listed(refs?.ville, form.city).map((label) => <option key={label} value={label}>{label}</option>)}
+                </select>
+              </Field>
+              <Field label="Pays">
+                <select value={form.country || ''} onChange={(event) => setForm({ ...form, country: event.target.value })}>
+                  <option value="">Choisir</option>
+                  {listed(refs?.pays, form.country).map((label) => <option key={label} value={label}>{label}</option>)}
                 </select>
               </Field>
               <Field label="Adresse" wide><input value={form.address || ''} onChange={(event) => setForm({ ...form, address: event.target.value })} /></Field>

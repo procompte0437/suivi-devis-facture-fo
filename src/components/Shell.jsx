@@ -14,16 +14,16 @@ const NAV = [
   { to: '/factures', label: 'Factures', group: 'Gestion', icon: 'bill' },
   { to: '/projets', label: 'Projets', group: 'Gestion', icon: 'layers' },
   { to: '/personnel', label: 'Personnel', group: 'Entreprise', icon: 'people' },
-  { to: '/entreprises', label: 'Entreprises', group: 'Entreprise', icon: 'layers', admin: true },
+  { to: '/referentiel', label: 'Référentiel', group: 'Référentiel', icon: 'layers' },
   { to: '/admin', label: 'Administration', group: 'Entreprise', icon: 'key', admin: true },
 ];
 
 export default function Shell() {
-  const { user, logout, company, companies, switchCompany, isManager } = useAuth();
+  const { user, logout, company, companies, switchCompany, isManager, ready } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   // Compte sans entreprise (compte personne) : on commence par en créer une.
-  const needsCompany = !company && !companies?.length && pathname !== '/entreprises';
+  const needsCompany = ready && user?.role !== 'admin' && !company && !companies?.length && pathname !== '/entreprises' && pathname !== '/referentiel';
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('oree_nav') === 'closed');
   const [drawer, setDrawer] = useState(false);
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 820px)').matches);
@@ -142,17 +142,27 @@ export default function Shell() {
                 <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
               </svg>
             </button>
+            <span className="platform-mark">
+              <strong>DOUKOU</strong>
+              <span>Plateforme</span>
+            </span>
             <span className="eyebrow">{ROLES[user?.role] || 'Espace équipe'}</span>
-            {companies?.length ? (
-              <select
-                className="company-switch"
-                value={company?.id || ''}
-                aria-label="Entreprise active"
-                onChange={(event) => switchCompany(event.target.value)}
-              >
-                {companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            ) : null}
+            {companies?.length || user?.role === 'admin' ? (
+              <label className="company-slot">
+                <span>Entreprise</span>
+                <select
+                  className="company-switch"
+                  value={company?.id || (user?.role === 'admin' ? 'all' : '')}
+                  aria-label="Entreprise active"
+                  onChange={(event) => switchCompany(event.target.value)}
+                >
+                  {user?.role === 'admin' ? <option value="all">Toutes les entreprises</option> : null}
+                  {companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </label>
+            ) : (
+              <span className="company-slot"><span>Entreprise</span><b>À créer</b></span>
+            )}
           </div>
           <button className="search-btn" type="button" onClick={() => setPalette(true)}>
             Rechercher… <span className="muted">Ctrl K</span>

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, errorText } from '../api';
+import { api, errorText, telechargerFichier } from '../api';
 import { useAuth } from '../auth';
 import { dateInput, formatDate, money, ROLES, todayISO, UNITS } from '../format';
 import { Paper } from '../components/Paper';
 import { INVOICE_TEMPLATES, QUOTE_TEMPLATES } from '../templates';
-import { DocumentPicker, PrintDocument } from '../components/DocumentPicker';
+import { DocumentPicker } from '../components/DocumentPicker';
 import { Banner, Field, Loading, Modal } from '../components/ui';
+import { champsDocumentManquants, messageChampsManquants, oublierChamp } from '../champsObligatoires';
 
 const SUGGESTIONS = [
   ['Direction de création', 'j', 180000],
@@ -44,7 +45,6 @@ export default function QuoteStudio() {
   const [createProject, setCreateProject] = useState(true);
   const [invoiceTemplate, setInvoiceTemplate] = useState('cedre');
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [printing, setPrinting] = useState(null);
   const [form, setForm] = useState({
     client_id: '',
     project_id: '',
@@ -58,6 +58,8 @@ export default function QuoteStudio() {
     template: 'nomade',
   });
   const [lines, setLines] = useState([blankLine()]);
+  // Clés des champs obligatoires encore vides après une tentative d’enregistrement.
+  const [champsErreur, setChampsErreur] = useState({});
 
   useEffect(() => {
     api('/clients').then(setClients).catch((err) => setError(errorText(err)));
@@ -92,9 +94,22 @@ export default function QuoteStudio() {
 
   function updateLine(index, key, value) {
     setLines(lines.map((line, lineIndex) => (lineIndex === index ? { ...line, [key]: value } : line)));
+    const cle = key === 'designation' ? `designation-${index}` : key === 'quantity' ? `quantite-${index}` : key === 'unit_price' ? `prix-${index}` : '';
+    if (cle) setChampsErreur((actuel) => oublierChamp(actuel, cle));
+    if (key === 'designation' && String(value).trim()) setChampsErreur((actuel) => oublierChamp(actuel, 'lignes'));
   }
 
   async function save(statusOverride, templateOverride) {
+    const manque = champsDocumentManquants(form, lines);
+    setChampsErreur(manque);
+    if (Object.keys(manque).length) {
+      setNotice('');
+      setError(messageChampsManquants(manque, 'devis'));
+      requestAnimationFrame(() => {
+        document.querySelector('.field.erreur, input.erreur, .card.erreur')?.scrollIntoView({ block: 'center' });
+      });
+      return null;
+    }
     setPending(true);
     setError('');
     setNotice('');
@@ -188,17 +203,33 @@ export default function QuoteStudio() {
 
   // Le modèle choisi à la génération devient celui du devis (s'il est déjà enregistré).
   async function generate(template) {
-    if (canWrite && quote && template !== form.template) {
-      setForm({ ...form, template });
-      await save(undefined, template);
-    } else if (template !== form.template) {
-      setForm({ ...form, template });
-    }
+    const saved = canWrite ? await save(undefined, template) : quote;
+    if (!saved?.id) return;
     setPickerOpen(false);
-    setPrinting(template);
+    try {
+      await telechargerFichier(`/quotes/${saved.id}/pdf`);
+    } catch (err) {
+      setError(errorText(err));
+    }
   }
 
-  if (!ready) return <Loading inline label="Chargement du devis" />;
+  if (!ready) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker"><Link to="/devis">Devis</Link></p>
+            <h1>Devis</h1>
+          </div>
+          <button className="btn" type="button" onClick={() => navigate('/devis')}>Retour</button>
+        </header>
+        <div className="studio">
+          <div className="card"><Loading label="Chargement du devis" /></div>
+          <div className="sheet-wrap"><div className="card"><Loading compact label="Aperçu" /></div></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -208,6 +239,7 @@ export default function QuoteStudio() {
           <h1>{quote?.number || 'Nouveau devis'}</h1>
         </div>
         <div className="actions">
+          <button className="btn" type="button" onClick={() => navigate('/devis')}>Retour</button>
           <button className="btn" type="button" onClick={() => setPickerOpen(true)}>Générer le PDF</button>
           {canWrite && quote?.status === 'brouillon' ? (
             <button className="btn btn-danger" type="button" onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}>
@@ -277,8 +309,8 @@ export default function QuoteStudio() {
       <div className="studio">
         <fieldset className="editor" disabled={!canWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
           <div className="card fields">
-            <Field label="Client">
-              <select value={form.client_id} onChange={(event) => setForm({ ...form, client_id: event.target.value, project_id: '' })} required>
+            <Field label="Client" erreur={Boolean(champsErreur.client)}>
+              <select value={form.client_id} onChange={(event) => { setForm({ ...form, client_id: event.target.value, project_id: '' }); setChampsErreur((actuel) => oublierChamp(actuel, 'client')); }} required>
                 <option value="">Choisir</option>
                 {clients.map((item) => <option key={item.id} value={item.id}>{item.company}</option>)}
               </select>
@@ -289,7 +321,7 @@ export default function QuoteStudio() {
                 {clientProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </Field>
-            <Field label="Intitulé" wide><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></Field>
+            <Field label="Intitulé" wide erreur={Boolean(champsErreur.titre)}><input value={form.title} onChange={(event) => { setForm({ ...form, title: event.target.value }); setChampsErreur((actuel) => oublierChamp(actuel, 'titre')); }} /></Field>
             <Field label="Statut">
               <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
                 <option value="brouillon">Brouillon</option>
@@ -299,7 +331,7 @@ export default function QuoteStudio() {
               </select>
             </Field>
             <Field label="TVA %"><input type="number" value={form.tax_rate} onChange={(event) => setForm({ ...form, tax_rate: event.target.value })} /></Field>
-            <Field label="Émission"><input type="date" value={form.issue_date} onChange={(event) => setForm({ ...form, issue_date: event.target.value })} /></Field>
+            <Field label="Émission" erreur={Boolean(champsErreur.emission)}><input type="date" value={form.issue_date} onChange={(event) => { setForm({ ...form, issue_date: event.target.value }); setChampsErreur((actuel) => oublierChamp(actuel, 'emission')); }} /></Field>
             <Field label="Validité"><input type="date" value={form.valid_until} onChange={(event) => setForm({ ...form, valid_until: event.target.value })} /></Field>
             <Field label="Remise"><input type="number" value={form.discount} onChange={(event) => setForm({ ...form, discount: event.target.value })} /></Field>
             <Field label="Note" wide><textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></Field>
@@ -315,7 +347,7 @@ export default function QuoteStudio() {
               </div>
             </div>
           </div>
-          <div className="card">
+          <div className={`card${champsErreur.lignes ? ' erreur' : ''}`}>
             <div className="suggest" style={{ marginBottom: 10 }}>
               {SUGGESTIONS.map(([label, unit, price]) => (
                 <button key={label} className="chip" type="button" onClick={() => setLines([...lines, { designation: label, detail: '', quantity: 1, unit, unit_price: price }])}>
@@ -326,12 +358,12 @@ export default function QuoteStudio() {
             <div className="lines">
               {lines.map((line, index) => (
                 <div className="line" key={index}>
-                  <input placeholder="Désignation" value={line.designation} onChange={(event) => updateLine(index, 'designation', event.target.value)} />
-                  <input type="number" min="0" step="0.5" value={line.quantity} onChange={(event) => updateLine(index, 'quantity', event.target.value)} />
+                  <input className={champsErreur[`designation-${index}`] ? 'erreur' : ''} placeholder="Désignation" value={line.designation} onChange={(event) => updateLine(index, 'designation', event.target.value)} />
+                  <input className={champsErreur[`quantite-${index}`] ? 'erreur' : ''} type="number" min="0" step="0.5" value={line.quantity} onChange={(event) => updateLine(index, 'quantity', event.target.value)} />
                   <select value={line.unit} onChange={(event) => updateLine(index, 'unit', event.target.value)}>
                     {UNITS.map((unit) => <option key={unit}>{unit}</option>)}
                   </select>
-                  <input type="number" min="0" placeholder="Prix" value={line.unit_price} onChange={(event) => updateLine(index, 'unit_price', event.target.value)} />
+                  <input className={champsErreur[`prix-${index}`] ? 'erreur' : ''} type="number" min="0" placeholder="Prix" value={line.unit_price} onChange={(event) => updateLine(index, 'unit_price', event.target.value)} />
                   <button className="icon-btn" type="button" onClick={() => setLines(lines.filter((_, lineIndex) => lineIndex !== index))} aria-label="Retirer">×</button>
                 </div>
               ))}
@@ -353,7 +385,6 @@ export default function QuoteStudio() {
           onConfirm={generate}
         />
       ) : null}
-      {printing ? <PrintDocument paper={paperProps} kind="devis" template={printing} onDone={() => setPrinting(null)} /> : null}
     </div>
   );
 }

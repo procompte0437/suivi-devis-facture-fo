@@ -14,10 +14,7 @@ export default function Stats() {
     api('/dashboard').then(setData).catch((err) => setError(errorText(err)));
   }, []);
 
-  if (error) return <div className="page"><Banner>{error}</Banner></div>;
-  if (!data) return <Loading inline label="Lecture des statistiques" />;
-
-  const quotes = data.pipeline?.reduce((sum, item) => sum + item.count, 0) || 0;
+  const quotes = data?.pipeline?.reduce((sum, item) => sum + item.count, 0) || 0;
 
   return (
     <div className="page">
@@ -28,6 +25,21 @@ export default function Stats() {
           <p className="lead">Indicateurs du mois : devis, facturation, paiements et projets.</p>
         </div>
       </header>
+      {error ? <Banner>{error}</Banner> : null}
+      {!data && !error ? (
+        <>
+          <section className="grid-kpis">
+            {[0, 1, 2, 3].map((index) => (
+              <article className="card" key={index}><Loading compact label="" /></article>
+            ))}
+          </section>
+          <section className="card" style={{ marginTop: 16 }}>
+            <h2>Pipeline des devis</h2>
+            <Loading compact label="Lecture des statistiques" />
+          </section>
+        </>
+      ) : data ? (
+        <>
       <section className="grid-kpis">
         {data.kpis.map((kpi) => (
           <article className="card" key={kpi.key}>
@@ -48,6 +60,8 @@ export default function Stats() {
           </div>
         ))}
       </section>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorText } from '../api';
 import { useAuth } from '../auth';
 import { dateInput, formatDate, INVOICE_STATUS, PROJECT_STATUS, QUOTE_STATUS, todayISO } from '../format';
-import { Banner, Field, Loading, Pill } from '../components/ui';
+import { Banner, Field, Loading, Modal, Pill } from '../components/ui';
 import { Gantt } from '../components/Gantt';
 import { ProjectInsights } from '../components/ProjectInsights';
 
@@ -22,15 +22,15 @@ const EMPTY = {
     { title: 'Production', due_date: '', done: false },
     { title: 'Livraison', due_date: '', done: false },
   ],
-  tasks: [{ title: '', staff_id: '', start_date: '', end_date: '', progress: 0 }],
-  budget_lines: [{ label: '', planned: '', spent: '' }],
+  tasks: [],
+  budget_lines: [],
 };
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const isNew = !id || id === 'nouveau';
   const navigate = useNavigate();
-  const { can, settings } = useAuth();
+  const { can, settings, company, user } = useAuth();
   const [planDirty, setPlanDirty] = useState(false);
   const canWrite = can('projects');
   const [clients, setClients] = useState([]);
@@ -42,6 +42,11 @@ export default function ProjectDetail() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [ready, setReady] = useState(false);
+  // Fenêtre du formulaire d’ajout : jalon, tâche, poste ou suivi.
+  const [fenetre, setFenetre] = useState(null);
+  const [jalon, setJalon] = useState({ title: '', due_date: '' });
+  const [tache, setTache] = useState({ title: '', staff_id: '', start_date: '', end_date: '', progress: 0 });
+  const [poste, setPoste] = useState({ label: '', planned: '', spent: '' });
 
   useEffect(() => {
     api('/clients').then(setClients).catch((err) => setError(errorText(err)));
@@ -142,13 +147,34 @@ export default function ProjectDetail() {
       setProject(saved);
       setForm({ ...form, progress: saved.progress, status: saved.status, milestones: saved.milestones });
       setStep({ progress: saved.progress, status: saved.status, comment: '' });
+      setFenetre(null);
       setNotice('Avancement mis à jour.');
     } catch (err) {
       setError(errorText(err));
     }
   }
 
-  if (!ready) return <Loading inline label="Chargement du projet" />;
+  if (!ready) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker"><Link to="/projets">Projets</Link></p>
+            <h1>Projet</h1>
+          </div>
+          <button className="btn" type="button" onClick={() => navigate('/projets')}>Retour</button>
+        </header>
+        <section className="card gantt-card">
+          <h2>Planning</h2>
+          <Loading compact label="Chargement du projet" />
+        </section>
+        <div className="studio">
+          <div className="card"><Loading compact label="Chargement de la fiche" /></div>
+          <div className="card"><Loading compact label="Chargement des tâches" /></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -157,11 +183,15 @@ export default function ProjectDetail() {
           <p className="kicker"><Link to="/projets">Projets</Link> {project ? `· ${project.code}` : ''}</p>
           <h1>{form.name || 'Nouveau projet'}</h1>
         </div>
-        {project ? <Pill status={project.status} map={PROJECT_STATUS} /> : null}
+        <div className="actions">
+          <button className="btn" type="button" onClick={() => navigate('/projets')}>Retour</button>
+          {project ? <Pill status={project.status} map={PROJECT_STATUS} /> : null}
+        </div>
       </header>
       <div className="stack" style={{ marginBottom: 12 }}>
         <Banner>{error}</Banner>
         <Banner tone="ok">{notice}</Banner>
+        {isNew && user?.role === 'admin' && !company ? <Banner>Choisissez une entreprise dans le menu du haut avant d’enregistrer. La vue « Toutes les entreprises » sert à consulter.</Banner> : null}
       </div>
       {!canWrite ? <p className="muted" style={{ marginBottom: 12 }}>Lecture seule : les projets sont gérés par le chef de projet.</p> : null}
       {project || form.tasks.some((task) => task.title) ? (
@@ -243,9 +273,9 @@ export default function ProjectDetail() {
               <input type="date" value={dateInput(milestone.due_date)} onChange={(event) => setMilestone(index, { due_date: event.target.value })} />
             </label>
           ))}
-          <button className="btn btn-tiny" type="button" onClick={() => setForm({ ...form, milestones: [...form.milestones, { title: '', due_date: '', done: false }] })}>Ajouter un jalon</button>
+          {canWrite ? <button className="btn btn-tiny" type="button" onClick={() => { setJalon({ title: '', due_date: '' }); setFenetre('jalon'); }}>Ajouter un jalon</button> : null}
           <h3 style={{ marginTop: 22 }}>Tâches et responsables</h3>
-          {form.tasks.map((task, index) => (
+          {form.tasks.length === 0 ? <p className="muted">Aucune tâche pour le moment.</p> : form.tasks.map((task, index) => (
             <div className="task-row" key={index}>
               <input placeholder="Tâche" value={task.title} onChange={(event) => setForm({ ...form, tasks: form.tasks.map((item, i) => i === index ? { ...item, title: event.target.value } : item) })} />
               <select value={task.staff_id} onChange={(event) => setForm({ ...form, tasks: form.tasks.map((item, i) => i === index ? { ...item, staff_id: event.target.value } : item) })}>
@@ -257,16 +287,16 @@ export default function ProjectDetail() {
               <input type="number" min="0" max="100" value={task.progress} onChange={(event) => setForm({ ...form, tasks: form.tasks.map((item, i) => i === index ? { ...item, progress: event.target.value } : item) })} />
             </div>
           ))}
-          <button className="btn btn-tiny" type="button" onClick={() => setForm({ ...form, tasks: [...form.tasks, { title: '', staff_id: '', start_date: form.start_date, end_date: form.due_date, progress: 0 }] })}>Ajouter une tâche</button>
+          {canWrite ? <button className="btn btn-tiny" type="button" onClick={() => { setTache({ title: '', staff_id: '', start_date: form.start_date, end_date: form.due_date, progress: 0 }); setFenetre('tache'); }}>Ajouter une tâche</button> : null}
           <h3 style={{ marginTop: 22 }}>Budget du projet</h3>
-          {form.budget_lines.map((line, index) => (
+          {form.budget_lines.length === 0 ? <p className="muted">Aucun poste pour le moment.</p> : form.budget_lines.map((line, index) => (
             <div className="task-row" key={index}>
               <input placeholder="Poste" value={line.label} onChange={(event) => setForm({ ...form, budget_lines: form.budget_lines.map((item, i) => i === index ? { ...item, label: event.target.value } : item) })} />
               <input type="number" min="0" placeholder="Prévu" value={line.planned} onChange={(event) => setForm({ ...form, budget_lines: form.budget_lines.map((item, i) => i === index ? { ...item, planned: event.target.value } : item) })} />
               <input type="number" min="0" placeholder="Dépensé" value={line.spent} onChange={(event) => setForm({ ...form, budget_lines: form.budget_lines.map((item, i) => i === index ? { ...item, spent: event.target.value } : item) })} />
             </div>
           ))}
-          <button className="btn btn-tiny" type="button" onClick={() => setForm({ ...form, budget_lines: [...form.budget_lines, { label: '', planned: '', spent: '' }] })}>Ajouter un poste</button>
+          {canWrite ? <button className="btn btn-tiny" type="button" onClick={() => { setPoste({ label: '', planned: '', spent: '' }); setFenetre('poste'); }}>Ajouter un poste</button> : null}
           {project ? (
             <div style={{ marginTop: 22 }}>
               <h3>Pièces liées</h3>
@@ -286,22 +316,7 @@ export default function ProjectDetail() {
         <section className="card project-log">
           <h2>Suivi de l’avancement</h2>
           <p className="sub">Chaque mise à jour est datée et visible par le client dans son espace.</p>
-          {canWrite ? (
-            <form onSubmit={postUpdate}>
-              <Field label="Avancement %">
-                <input type="number" min="0" max="100" value={step.progress} onChange={(event) => setStep({ ...step, progress: event.target.value })} required />
-              </Field>
-              <Field label="État">
-                <select value={step.status} onChange={(event) => setStep({ ...step, status: event.target.value })}>
-                  {Object.entries(PROJECT_STATUS).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
-                </select>
-              </Field>
-              <Field label="Commentaire de suivi">
-                <input value={step.comment} maxLength={2000} placeholder="Ex. : fabrication terminée, pose prévue lundi" onChange={(event) => setStep({ ...step, comment: event.target.value })} />
-              </Field>
-              <button className="btn btn-primary" type="submit">Publier</button>
-            </form>
-          ) : null}
+          {canWrite ? <button className="btn" type="button" onClick={() => setFenetre('suivi')}>Publier une mise à jour</button> : null}
           {project.updates?.length ? (
             <div className="timeline">
               {project.updates.map((item) => (
@@ -319,6 +334,79 @@ export default function ProjectDetail() {
             </div>
           ) : <p className="muted">Aucune mise à jour publiée pour l’instant.</p>}
         </section>
+      ) : null}
+      {fenetre === 'jalon' ? (
+        <Modal title="Nouveau jalon" onClose={() => setFenetre(null)}>
+          <form className="stack" onSubmit={(event) => {
+            event.preventDefault();
+            setForm({ ...form, milestones: [...form.milestones, { title: jalon.title.trim(), due_date: jalon.due_date, done: false }] });
+            setFenetre(null);
+            setNotice('Jalon ajouté. Enregistrez le projet pour le conserver.');
+          }}>
+            <Field label="Nom" wide><input value={jalon.title} onChange={(event) => setJalon({ ...jalon, title: event.target.value })} required /></Field>
+            <Field label="Date" wide><input type="date" value={jalon.due_date} onChange={(event) => setJalon({ ...jalon, due_date: event.target.value })} /></Field>
+            <button className="btn btn-primary" type="submit">Ajouter le jalon</button>
+          </form>
+        </Modal>
+      ) : null}
+      {fenetre === 'tache' ? (
+        <Modal title="Nouvelle tâche" onClose={() => setFenetre(null)}>
+          <form className="stack" onSubmit={(event) => {
+            event.preventDefault();
+            setForm({ ...form, tasks: [...form.tasks, { ...tache, title: tache.title.trim(), progress: Number(tache.progress || 0) }] });
+            setFenetre(null);
+            setNotice('Tâche ajoutée. Enregistrez le projet pour la conserver.');
+          }}>
+            <div className="fields">
+              <Field label="Tâche" wide><input value={tache.title} onChange={(event) => setTache({ ...tache, title: event.target.value })} required /></Field>
+              <Field label="Personne" wide>
+                <select value={tache.staff_id} onChange={(event) => setTache({ ...tache, staff_id: event.target.value })}>
+                  <option value="">Choisir</option>
+                  {staff.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Début"><input type="date" value={tache.start_date || ''} onChange={(event) => setTache({ ...tache, start_date: event.target.value })} /></Field>
+              <Field label="Fin"><input type="date" value={tache.end_date || ''} onChange={(event) => setTache({ ...tache, end_date: event.target.value })} /></Field>
+              <Field label="Avancement %"><input type="number" min="0" max="100" value={tache.progress} onChange={(event) => setTache({ ...tache, progress: event.target.value })} /></Field>
+            </div>
+            <button className="btn btn-primary" type="submit">Ajouter la tâche</button>
+          </form>
+        </Modal>
+      ) : null}
+      {fenetre === 'poste' ? (
+        <Modal title="Nouveau poste de budget" onClose={() => setFenetre(null)}>
+          <form className="stack" onSubmit={(event) => {
+            event.preventDefault();
+            setForm({ ...form, budget_lines: [...form.budget_lines, { ...poste, label: poste.label.trim() }] });
+            setFenetre(null);
+            setNotice('Poste ajouté. Enregistrez le projet pour le conserver.');
+          }}>
+            <div className="fields">
+              <Field label="Poste" wide><input value={poste.label} onChange={(event) => setPoste({ ...poste, label: event.target.value })} required /></Field>
+              <Field label="Prévu"><input type="number" min="0" value={poste.planned} onChange={(event) => setPoste({ ...poste, planned: event.target.value })} /></Field>
+              <Field label="Dépensé"><input type="number" min="0" value={poste.spent} onChange={(event) => setPoste({ ...poste, spent: event.target.value })} /></Field>
+            </div>
+            <button className="btn btn-primary" type="submit">Ajouter le poste</button>
+          </form>
+        </Modal>
+      ) : null}
+      {fenetre === 'suivi' ? (
+        <Modal title="Nouvelle mise à jour" onClose={() => setFenetre(null)}>
+          <form className="stack" onSubmit={postUpdate}>
+            <Field label="Avancement %" wide>
+              <input type="number" min="0" max="100" value={step.progress} onChange={(event) => setStep({ ...step, progress: event.target.value })} required />
+            </Field>
+            <Field label="État" wide>
+              <select value={step.status} onChange={(event) => setStep({ ...step, status: event.target.value })}>
+                {Object.entries(PROJECT_STATUS).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Commentaire de suivi" wide>
+              <input value={step.comment} maxLength={2000} placeholder="Ex. : fabrication terminée, pose prévue lundi" onChange={(event) => setStep({ ...step, comment: event.target.value })} />
+            </Field>
+            <button className="btn btn-primary" type="submit">Publier</button>
+          </form>
+        </Modal>
       ) : null}
     </div>
   );

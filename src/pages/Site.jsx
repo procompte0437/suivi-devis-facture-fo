@@ -258,23 +258,23 @@ export function Pricing() {
     ['Multi', 'Plusieurs entreprises', ['Plusieurs entreprises sous un compte', 'Sélecteur d’entreprise', 'Statistiques par entreprise'], false],
   ];
   return (
-    <main>
-      <PageBanner title="Tarifs" lead="Le portail est gratuit pendant la phase de test." />
-      <PageBody>
-        <p>Les formules ci-dessous décrivent les usages prévus. Pendant la phase de test, toutes les fonctions sont ouvertes sans frais.</p>
-        <div className="st-grid three">
-          {plans.map(([title, line, items, featured]) => (
-            <article className={`st-plan${featured ? ' on' : ''}`} key={title}>
-              <small style={{ color: 'var(--st-brass-deep)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 12 }}>{line}</small>
+    <main className="st-plans-page">
+      <div className="st-wrap">
+        <h1>Explorer les formules</h1>
+        <p>Pendant la phase de test, toutes les fonctions sont ouvertes sans frais.</p>
+        <div className="st-plans">
+          {plans.map(([title, line, items]) => (
+            <article className="st-plan" key={title}>
               <h2>{title}</h2>
+              <small>{line}</small>
               <span className="price">Gratuit</span>
+              <Link className="st-btn block" to="/inscription">Créer un compte</Link>
               <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-              <Link className={`st-btn${featured ? '' : ' ghost'}`} to="/inscription">Créer un compte</Link>
             </article>
           ))}
         </div>
-        <p>Une question sur les conditions ? <Link to="/contact" style={{ color: 'var(--st-forest)', fontWeight: 600 }}>Écrivez-nous</Link>.</p>
-      </PageBody>
+        <p className="st-plans-note">Une question sur les conditions ? <Link to="/contact">Écrivez-nous</Link>.</p>
+      </div>
     </main>
   );
 }
@@ -304,16 +304,20 @@ export function Advice() {
         <p>Une mise à jour courte, avec un pourcentage et une phrase de commentaire, évite au client de devoir appeler pour savoir où en est son projet.</p>
         <h2>Enregistrer les paiements le jour même</h2>
         <p>Le reste à payer et la liste des factures en retard ne sont justes que si chaque paiement est saisi avec sa date et son mode.</p>
-        <h2 id="faq">Questions fréquentes</h2>
-        <div className="st-faq">
-          {FAQ.map(([question, answer], index) => (
-            <details key={question} open={index === 0}>
-              <summary>{question}</summary>
-              <p>{answer}</p>
-            </details>
-          ))}
-        </div>
       </PageBody>
+      <section className="st-faq-page" id="faq">
+        <div className="st-wrap">
+          <h2>FAQ</h2>
+          <div className="st-faq">
+            {FAQ.map(([question, answer]) => (
+              <details key={question}>
+                <summary>{question}</summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
       <PageCta />
     </main>
   );
@@ -346,18 +350,19 @@ export function Vision() {
 export function About() {
   return (
     <main>
-      <PageBanner title="À propos" lead="DOUKOU veut dire « suivre » en nzebi." />
-      <PageBody>
-        <figure className="st-figure">
-          <img src="/home/bandeau-equipe.jpg" alt="Deux artisans dans un atelier, en extérieur" />
+      <section className="st-about">
+        <div className="st-about-copy">
+          <h1>À propos</h1>
+          <p>DOUKOU est un portail web de gestion des devis, des factures et du suivi des projets clients, réalisé dans le cadre d’un projet de stage à Libreville. DOUKOU veut dire « suivre » en nzebi.</p>
+          <p>Il s’adresse aux petites entreprises de services et de travaux qui gèrent aujourd’hui ces informations dans plusieurs fichiers séparés, et à leurs clients, qui peuvent suivre leurs dossiers en ligne.</p>
+          <h2>La technique</h2>
+          <p>Une API Laravel avec une base PostgreSQL, une interface React, et des accès sécurisés par rôle. Chaque entreprise a ses propres données, séparées de celles des autres.</p>
+          <Link className="st-btn ghost" to="/vision">Lire la suite</Link>
+        </div>
+        <figure>
+          <img src="/home/bandeau-equipe.jpg" alt="Deux artisans dans un jardin, à Libreville" />
         </figure>
-        <h2>Le projet</h2>
-        <p>DOUKOU est un portail web de gestion des devis, des factures et du suivi des projets clients, réalisé dans le cadre d’un projet de stage à Libreville.</p>
-        <p>Il s’adresse aux petites entreprises de services et de travaux qui gèrent aujourd’hui ces informations dans plusieurs fichiers séparés, et à leurs clients, qui peuvent suivre leurs dossiers en ligne.</p>
-        <h2>La technique</h2>
-        <p>Une API Laravel avec une base PostgreSQL, une interface React, et des accès sécurisés par rôle. Chaque entreprise a ses propres données, séparées de celles des autres.</p>
-      </PageBody>
-      <PageCta />
+      </section>
     </main>
   );
 }

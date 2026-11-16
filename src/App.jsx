@@ -1,8 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { getToken } from './api';
 import { useAuth } from './auth';
 import ChatWidget from './components/ChatWidget';
+import { ZoneToasts } from './components/Toasts';
 import Shell from './components/Shell';
-import { Loading } from './components/ui';
 import Admin from './pages/Admin';
 import Clients from './pages/Clients';
 import Companies from './pages/Companies';
@@ -22,17 +23,21 @@ import Stats from './pages/Stats';
 
 function RequireAuth() {
   const auth = useAuth();
-  if (!auth?.ready) return <Loading />;
-  if (!auth.user) return <Navigate to="/login" replace />;
-  if (auth.isClient) return <Navigate to="/espace-client" replace />;
+  const booting = !auth?.ready && Boolean(getToken());
+  if (!booting) {
+    if (!auth?.user) return <Navigate to="/login" replace />;
+    if (auth.isClient) return <Navigate to="/espace-client" replace />;
+  }
   return <Shell />;
 }
 
 function RequireClient() {
   const auth = useAuth();
-  if (!auth?.ready) return <Loading />;
-  if (!auth.user) return <Navigate to="/login" replace />;
-  if (!auth.isClient) return <Navigate to="/tableau" replace />;
+  const booting = !auth?.ready && Boolean(getToken());
+  if (!booting) {
+    if (!auth?.user) return <Navigate to="/login" replace />;
+    if (!auth.isClient) return <Navigate to="/tableau" replace />;
+  }
   return <PortalLayout />;
 }
 
@@ -67,6 +72,7 @@ export default function App() {
           <Route path="projets/nouveau" element={<ProjectDetail />} />
           <Route path="projets/:id" element={<ProjectDetail />} />
           <Route path="personnel" element={<Personnel />} />
+          <Route path="referentiel" element={<Companies />} />
           <Route path="entreprises" element={<Companies />} />
           <Route path="statistiques" element={<Stats />} />
           <Route path="admin" element={<Admin />} />
@@ -79,6 +85,7 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ZoneToasts />
       <ChatWidget />
     </>
   );

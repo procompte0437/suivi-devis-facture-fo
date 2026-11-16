@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Paper } from './Paper';
 
 /**
  * Choix du modèle au moment de générer un devis ou une facture.
  * Les cinq modèles sont rendus avec les vraies données du document ;
- * le modèle retenu est imprimé seul (impression navigateur ou « Enregistrer en PDF »).
+ * le modèle retenu est enregistré, puis le PDF est produit par le serveur.
  */
 export function DocumentPicker({ kind, templates, current, paper, onClose, onConfirm }) {
   const [picked, setPicked] = useState(current || templates[0][0]);
@@ -89,34 +89,3 @@ export function DocumentPicker({ kind, templates, current, paper, onClose, onCon
   );
 }
 
-/**
- * Rend le document hors de l'application et lance l'impression :
- * seule la feuille est imprimée, sans menus ni formulaires.
- */
-export function PrintDocument({ paper, kind, template, onDone }) {
-  const done = useRef(onDone);
-  useEffect(() => {
-    done.current = onDone;
-  }, [onDone]);
-
-  // Une seule impression par ouverture, même si le parent se réaffiche.
-  useEffect(() => {
-    document.body.classList.add('print-doc');
-    const finish = () => {
-      document.body.classList.remove('print-doc');
-      done.current();
-    };
-    window.addEventListener('afterprint', finish, { once: true });
-    const timer = setTimeout(() => window.print(), 80);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('afterprint', finish);
-      document.body.classList.remove('print-doc');
-    };
-  }, []);
-
-  return createPortal(
-    <div className="print-only"><Paper {...paper} kind={kind} template={template} /></div>,
-    document.body,
-  );
-}

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, errorText } from '../api';
+import { api, errorText, telechargerFichier } from '../api';
 import { useAuth } from '../auth';
 import { dateInput, formatDate, METHODS, money, todayISO, UNITS } from '../format';
 import { Paper } from '../components/Paper';
 import { INVOICE_TEMPLATES } from '../templates';
-import { DocumentPicker, PrintDocument } from '../components/DocumentPicker';
-import { Banner, Field, Loading } from '../components/ui';
+import { DocumentPicker } from '../components/DocumentPicker';
+import { Banner, Field, Loading, Modal } from '../components/ui';
+import { champsDocumentManquants, messageChampsManquants, oublierChamp } from '../champsObligatoires';
 
 function blankLine() {
   return { designation: '', detail: '', quantity: 1, unit: 'forfait', unit_price: '' };
@@ -27,6 +28,7 @@ export default function InvoiceStudio() {
   const [pending, setPending] = useState(false);
   const [ready, setReady] = useState(isNew);
   const [payment, setPayment] = useState({ amount: '', paid_at: todayISO(), method: 'virement', reference: '', note: '' });
+  const [paiementOuvert, setPaiementOuvert] = useState(false);
   const [form, setForm] = useState({
     client_id: '',
     project_id: '',
@@ -40,9 +42,8 @@ export default function InvoiceStudio() {
     template: 'cedre',
   });
   const [lines, setLines] = useState([blankLine()]);
+  const [champsErreur, setChampsErreur] = useState({});
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [printing, setPrinting] = useState(null);
-
   useEffect(() => {
     api('/clients').then(setClients).catch((err) => setError(errorText(err)));
     api('/projects').then(setProjects).catch(() => {});
@@ -79,9 +80,22 @@ export default function InvoiceStudio() {
 
   function updateLine(index, key, value) {
     setLines(lines.map((line, lineIndex) => (lineIndex === index ? { ...line, [key]: value } : line)));
+    const cle = key === 'designation' ? `designation-${index}` : key === 'quantity' ? `quantite-${index}` : key === 'unit_price' ? `prix-${index}` : '';
+    if (cle) setChampsErreur((actuel) => oublierChamp(actuel, cle));
+    if (key === 'designation' && String(value).trim()) setChampsErreur((actuel) => oublierChamp(actuel, 'lignes'));
   }
 
   async function save(statusOverride, templateOverride) {
+    const manque = champsDocumentManquants(form, lines);
+    setChampsErreur(manque);
+    if (Object.keys(manque).length) {
+      setNotice('');
+      setError(messageChampsManquants(manque, 'facture'));
+      requestAnimationFrame(() => {
+        document.querySelector('.field.erreur, input.erreur, .card.erreur')?.scrollIntoView({ block: 'center' });
+      });
+      return null;
+    }
     setPending(true);
     setError('');
     setNotice('');
@@ -109,8 +123,10 @@ export default function InvoiceStudio() {
       setNotice('Facture enregistrée.');
       if (isNew) navigate(`/factures/${saved.id}`, { replace: true });
       else setInvoice(saved);
+      return saved;
     } catch (err) {
       setError(errorText(err));
+      return null;
     } finally {
       setPending(false);
     }
@@ -126,6 +142,7 @@ export default function InvoiceStudio() {
       });
       setInvoice(saved);
       setNotice('Règlement enregistré.');
+      setPaiementOuvert(false);
       setPayment({ amount: saved.balance || '', paid_at: todayISO(), method: 'virement', reference: '', note: '' });
     } catch (err) {
       setError(errorText(err));
@@ -159,15 +176,33 @@ export default function InvoiceStudio() {
 
   // Le modèle choisi est enregistré sur la facture tant qu'elle n'est pas figée par un paiement.
   async function generate(template) {
-    if (template !== form.template) {
-      setForm({ ...form, template });
-      if (invoice && !locked) await save(undefined, template);
-    }
+    const saved = !locked && canWrite ? await save(undefined, template) : invoice;
+    if (!saved?.id) return;
     setPickerOpen(false);
-    setPrinting(template);
+    try {
+      await telechargerFichier(`/invoices/${saved.id}/pdf`);
+    } catch (err) {
+      setError(errorText(err));
+    }
   }
 
-  if (!ready) return <Loading inline label="Chargement de la facture" />;
+  if (!ready) {
+    return (
+      <div className="page">
+        <header className="page-head">
+          <div>
+            <p className="kicker"><Link to="/factures">Factures</Link></p>
+            <h1>Facture</h1>
+          </div>
+          <button className="btn" type="button" onClick={() => navigate('/factures')}>Retour</button>
+        </header>
+        <div className="studio">
+          <div className="card"><Loading label="Chargement de la facture" /></div>
+          <div className="sheet-wrap"><div className="card"><Loading compact label="Aperçu" /></div></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -177,6 +212,7 @@ export default function InvoiceStudio() {
           <h1>{invoice?.number || 'Nouvelle facture'}</h1>
         </div>
         <div className="actions">
+          <button className="btn" type="button" onClick={() => navigate('/factures')}>Retour</button>
           <button className="btn" type="button" onClick={() => setPickerOpen(true)}>Générer le PDF</button>
           {canWrite && invoice?.status === 'brouillon' ? <button className="btn btn-brass" type="button" onClick={emit}>Émettre</button> : null}
           {canWrite ? (
@@ -193,8 +229,8 @@ export default function InvoiceStudio() {
       <div className="studio">
         <div className="editor">
           <div className="card fields">
-            <Field label="Client">
-              <select value={form.client_id} disabled={locked} onChange={(event) => setForm({ ...form, client_id: event.target.value, project_id: '' })}>
+            <Field label="Client" erreur={Boolean(champsErreur.client)}>
+              <select value={form.client_id} disabled={locked} onChange={(event) => { setForm({ ...form, client_id: event.target.value, project_id: '' }); setChampsErreur((actuel) => oublierChamp(actuel, 'client')); }}>
                 <option value="">Choisir</option>
                 {clients.map((item) => <option key={item.id} value={item.id}>{item.company}</option>)}
               </select>
@@ -205,8 +241,8 @@ export default function InvoiceStudio() {
                 {clientProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </Field>
-            <Field label="Intitulé" wide><input disabled={locked} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></Field>
-            <Field label="Émission"><input disabled={locked} type="date" value={form.issue_date} onChange={(event) => setForm({ ...form, issue_date: event.target.value })} /></Field>
+            <Field label="Intitulé" wide erreur={Boolean(champsErreur.titre)}><input disabled={locked} value={form.title} onChange={(event) => { setForm({ ...form, title: event.target.value }); setChampsErreur((actuel) => oublierChamp(actuel, 'titre')); }} /></Field>
+            <Field label="Émission" erreur={Boolean(champsErreur.emission)}><input disabled={locked} type="date" value={form.issue_date} onChange={(event) => { setForm({ ...form, issue_date: event.target.value }); setChampsErreur((actuel) => oublierChamp(actuel, 'emission')); }} /></Field>
             <Field label="Échéance"><input disabled={locked} type="date" value={form.due_date} onChange={(event) => setForm({ ...form, due_date: event.target.value })} /></Field>
             <Field label="TVA %"><input disabled={locked} type="number" value={form.tax_rate} onChange={(event) => setForm({ ...form, tax_rate: event.target.value })} /></Field>
             <Field label="Remise"><input disabled={locked} type="number" value={form.discount} onChange={(event) => setForm({ ...form, discount: event.target.value })} /></Field>
@@ -223,16 +259,16 @@ export default function InvoiceStudio() {
               </div>
             </div>
           </div>
-          <div className="card">
+          <div className={`card${champsErreur.lignes ? ' erreur' : ''}`}>
             <div className="lines">
               {lines.map((line, index) => (
                 <div className="line" key={index}>
-                  <input disabled={locked} placeholder="Désignation" value={line.designation} onChange={(event) => updateLine(index, 'designation', event.target.value)} />
-                  <input disabled={locked} type="number" value={line.quantity} onChange={(event) => updateLine(index, 'quantity', event.target.value)} />
+                  <input className={champsErreur[`designation-${index}`] ? 'erreur' : ''} disabled={locked} placeholder="Désignation" value={line.designation} onChange={(event) => updateLine(index, 'designation', event.target.value)} />
+                  <input className={champsErreur[`quantite-${index}`] ? 'erreur' : ''} disabled={locked} type="number" value={line.quantity} onChange={(event) => updateLine(index, 'quantity', event.target.value)} />
                   <select disabled={locked} value={line.unit} onChange={(event) => updateLine(index, 'unit', event.target.value)}>
                     {UNITS.map((unit) => <option key={unit}>{unit}</option>)}
                   </select>
-                  <input disabled={locked} type="number" value={line.unit_price} onChange={(event) => updateLine(index, 'unit_price', event.target.value)} />
+                  <input className={champsErreur[`prix-${index}`] ? 'erreur' : ''} disabled={locked} type="number" value={line.unit_price} onChange={(event) => updateLine(index, 'unit_price', event.target.value)} />
                   <button className="icon-btn" type="button" disabled={locked} onClick={() => setLines(lines.filter((_, lineIndex) => lineIndex !== index))}>×</button>
                 </div>
               ))}
@@ -240,20 +276,10 @@ export default function InvoiceStudio() {
             {!locked ? <button className="btn btn-tiny" type="button" style={{ marginTop: 10 }} onClick={() => setLines([...lines, blankLine()])}>Ajouter une ligne</button> : null}
           </div>
           {invoice && invoice.status !== 'brouillon' && invoice.status !== 'annulee' ? (
-            <form className="card pay-box" onSubmit={pay}>
+            <div className="card pay-box">
               <h3>Paiements</h3>
               <p className="muted">Solde {money(invoice.balance, currency)} · déjà reçu {money(invoice.amount_paid, currency)}</p>
-              <div className="fields">
-                <Field label="Montant"><input type="number" min="0" value={payment.amount} onChange={(event) => setPayment({ ...payment, amount: event.target.value })} required /></Field>
-                <Field label="Date"><input type="date" value={payment.paid_at} onChange={(event) => setPayment({ ...payment, paid_at: event.target.value })} required /></Field>
-                <Field label="Mode">
-                  <select value={payment.method} onChange={(event) => setPayment({ ...payment, method: event.target.value })}>
-                    {METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </Field>
-                <Field label="Référence"><input value={payment.reference} onChange={(event) => setPayment({ ...payment, reference: event.target.value })} /></Field>
-              </div>
-              {canWrite ? <button className="btn btn-primary" type="submit" disabled={!invoice.balance}>Enregistrer le paiement</button> : null}
+              {canWrite ? <button className="btn" type="button" onClick={() => setPaiementOuvert(true)} disabled={!invoice.balance}>Enregistrer un paiement</button> : null}
               <div className="link-list">
                 {invoice.payments?.map((item) => (
                   <div key={item.id} className="quiet-row">
@@ -262,7 +288,7 @@ export default function InvoiceStudio() {
                   </div>
                 ))}
               </div>
-            </form>
+            </div>
           ) : null}
         </div>
         <div className="sheet-wrap">
@@ -279,7 +305,22 @@ export default function InvoiceStudio() {
           onConfirm={generate}
         />
       ) : null}
-      {printing ? <PrintDocument paper={paperProps} kind="facture" template={printing} onDone={() => setPrinting(null)} /> : null}
+      {paiementOuvert ? (
+        <Modal title="Enregistrer un paiement" onClose={() => setPaiementOuvert(false)}>
+          <form className="stack" onSubmit={pay}>
+            <p className="muted">Solde {money(invoice.balance, currency)}</p>
+            <Field label="Montant" wide><input type="number" min="0" value={payment.amount} onChange={(event) => setPayment({ ...payment, amount: event.target.value })} required /></Field>
+            <Field label="Date" wide><input type="date" value={payment.paid_at} onChange={(event) => setPayment({ ...payment, paid_at: event.target.value })} required /></Field>
+            <Field label="Mode" wide>
+              <select value={payment.method} onChange={(event) => setPayment({ ...payment, method: event.target.value })}>
+                {METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </Field>
+            <Field label="Référence" wide><input value={payment.reference} onChange={(event) => setPayment({ ...payment, reference: event.target.value })} /></Field>
+            <button className="btn btn-primary" type="submit">Enregistrer le paiement</button>
+          </form>
+        </Modal>
+      ) : null}
     </div>
   );
 }

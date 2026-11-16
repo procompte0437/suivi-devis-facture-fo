@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { errorText } from '../api';
 import { useAuth } from '../auth';
-import { Loading } from '../components/ui';
 import { DEMO_ACCOUNTS } from './site/data';
-import { PageBanner } from './site/SiteParts';
 
 const DEMO_PASSWORD = 'Cedre2026!';
 
@@ -15,8 +13,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
-  if (!ready) return <Loading inline />;
-  if (user) return <Navigate to={isClient ? '/espace-client' : '/tableau'} replace />;
+  if (ready && user) return <Navigate to={isClient ? '/espace-client' : '/tableau'} replace />;
 
   async function submit(event) {
     event.preventDefault();
@@ -31,48 +28,37 @@ export default function Login() {
   }
 
   return (
-    <main>
-      <PageBanner title="Connexion" lead="L’équipe gère ses clients, devis, factures et projets ; les clients suivent leurs dossiers." />
-      <div className="st-wrap st-auth">
-        <div className="st-form-card">
-          <h2>Accéder au portail</h2>
-          <p>Saisissez l’adresse e-mail et le mot de passe de votre compte.</p>
-          <form className="st-form" onSubmit={submit}>
-            {error ? <div className="st-alert err" role="alert">{error}</div> : null}
-            <label className="st-input">
-              <span>E-mail</span>
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="username" />
-            </label>
-            <label className="st-input">
-              <span>Mot de passe</span>
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
-            </label>
-            <button className="st-btn" type="submit" disabled={pending}>{pending ? 'Connexion…' : 'Se connecter'}</button>
-          </form>
-          <p className="st-auth-alt">Pas encore de compte ? <Link to="/inscription">Créer un compte</Link></p>
+    <main className="st-gate">
+      <div className="st-gate-copy">
+        <h1>Suivez ce qui vient ensuite</h1>
+        <p>Devis, factures et projets, dans le même dossier.</p>
+        <form className="st-gate-card" onSubmit={submit}>
+          {error ? <div className="st-alert err" role="alert">{error}</div> : null}
+          <label className="st-input">
+            <span>E-mail</span>
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="username" placeholder="vous@atelier.ga" />
+          </label>
+          <label className="st-input">
+            <span>Mot de passe</span>
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
+          </label>
+          <button className="st-btn block" type="submit" disabled={pending}>{pending ? 'Connexion…' : 'Continuer avec l’e-mail'}</button>
+          <p className="st-gate-alt">Pas encore de compte ? <Link to="/inscription">Créer un compte</Link></p>
+        </form>
+        <div className="st-gate-demo">
+          <p>Comptes de démonstration</p>
+          <div>
+            {DEMO_ACCOUNTS.map(([name, role, , mail]) => (
+              <button key={mail} type="button" className={email === mail ? 'on' : ''} onClick={() => { setEmail(mail); setPassword(DEMO_PASSWORD); }}>
+                {name}<small>{role}</small>
+              </button>
+            ))}
+          </div>
         </div>
-
-        <aside className="st-aside">
-          <section>
-            <h2>Comptes de démo</h2>
-            <ul className="st-demos">
-              {DEMO_ACCOUNTS.map(([name, role, , mail]) => (
-                <li key={mail}>
-                  <button
-                    type="button"
-                    className={email === mail ? 'on' : ''}
-                    onClick={() => { setEmail(mail); setPassword(DEMO_PASSWORD); }}
-                  >
-                    <strong>{name}</strong>
-                    <span>{role}</span>
-                  </button>
-                </li>
-              ))}
-              <li><p>Cliquez sur un compte pour remplir le formulaire.</p></li>
-            </ul>
-          </section>
-        </aside>
       </div>
+      <figure>
+        <img src="/home/hero-atelier.jpg" alt="Artisan au travail dans son atelier" />
+      </figure>
     </main>
   );
 }

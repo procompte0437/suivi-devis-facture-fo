@@ -8,18 +8,29 @@ export function AuthProvider({ children }) {
   const [settings, setSettings] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
+  const [unassigned, setUnassigned] = useState([]);
   const [abilities, setAbilities] = useState([]);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => !getToken());
 
   function apply(data) {
     setUser(data.user);
     setAbilities(data.abilities || []);
     setSettings(data.settings);
     setCompanies(data.companies || []);
+    setUnassigned(data.unassigned || []);
+    const platform = data.user?.role === 'admin';
     const saved = localStorage.getItem('oree_company');
-    const current = (data.companies || []).find((item) => String(item.id) === saved) || data.company || null;
+    const mode = localStorage.getItem('oree_company_mode');
+    if (platform && mode !== 'one') {
+      localStorage.setItem('oree_company', 'all');
+      localStorage.setItem('oree_company_mode', 'all');
+      setCompany(null);
+      return;
+    }
+    const current = (data.companies || []).find((item) => String(item.id) === saved) || (platform ? null : data.company) || null;
     setCompany(current);
     if (current?.id) localStorage.setItem('oree_company', String(current.id));
+    else if (platform) localStorage.setItem('oree_company', 'all');
   }
 
   useEffect(() => {
@@ -39,8 +50,10 @@ export function AuthProvider({ children }) {
     setSettings,
     companies,
     company,
+    unassigned,
     ready,
     isClient: user?.role === 'client',
+    isPlatformAdmin: user?.role === 'admin',
     isManager: ['admin', 'dirigeant'].includes(user?.role),
     can: (ability) => abilities.includes(ability),
     async login(email, password) {
@@ -59,7 +72,9 @@ export function AuthProvider({ children }) {
       apply(await api('/me'));
     },
     async switchCompany(id) {
-      localStorage.setItem('oree_company', String(id));
+      const all = String(id) === 'all';
+      localStorage.setItem('oree_company', all ? 'all' : String(id));
+      localStorage.setItem('oree_company_mode', all ? 'all' : 'one');
       apply(await api('/me'));
       window.location.assign('/tableau');
     },
@@ -73,9 +88,10 @@ export function AuthProvider({ children }) {
       setUser(null);
       setCompany(null);
       setCompanies([]);
+      setUnassigned([]);
       setAbilities([]);
     },
-  }), [user, settings, companies, company, ready, abilities]);
+  }), [user, settings, companies, company, unassigned, ready, abilities]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

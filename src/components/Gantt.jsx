@@ -16,8 +16,12 @@ const ZOOMS = [
 ];
 const LABEL_WIDTH = 230;
 
-export function Gantt({ tasks = [], milestones = [], start, end, onChange, emptyText, label = 'Tâche' }) {
-  const [zoom, setZoom] = useState('fit');
+export function Gantt({ tasks = [], milestones = [], start, end, onChange, emptyText, label = 'Tâche', tools = true, zoom: zoomProp }) {
+  const [zoomState, setZoomState] = useState(zoomProp || 'fit');
+  const zoom = zoomProp || zoomState;
+  function setZoom(value) {
+    setZoomState(value);
+  }
   const [drag, setDrag] = useState(null);
   const [width, setWidth] = useState(800);
   const box = useRef(null);
@@ -78,7 +82,7 @@ export function Gantt({ tasks = [], milestones = [], start, end, onChange, empty
 
   return (
     <div className="gx" ref={box}>
-      <div className="gx-tools">
+      {tools ? <div className="gx-tools">
         <div className="gx-zoom" role="radiogroup" aria-label="Échelle">
           {ZOOMS.map(([value, label]) => (
             <button key={value} type="button" role="radio" aria-checked={zoom === value} className={zoom === value ? 'on' : ''} onClick={() => setZoom(value)}>{label}</button>
@@ -91,7 +95,7 @@ export function Gantt({ tasks = [], milestones = [], start, end, onChange, empty
           <li><i className="lg-ms" />Jalon</li>
         </ul>
         {onChange ? <span className="gx-hint">Glissez une barre pour la déplacer, tirez un bord pour changer la durée.</span> : null}
-      </div>
+      </div> : null}
 
       <div className="gx-scroll">
         <div className="gx-grid" style={{ width: LABEL_WIDTH + total }} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
