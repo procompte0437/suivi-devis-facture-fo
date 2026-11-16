@@ -4,6 +4,14 @@ import { useAuth } from '../auth';
 import { formatDate, ROLES } from '../format';
 import { Banner, Field, Loading, Modal, Pill } from '../components/ui';
 
+const CONTACT_SUBJECTS = {
+  demo: 'Démonstration',
+  tarifs: 'Tarifs',
+  support: 'Aide sur le portail',
+  partenariat: 'Partenariat',
+  autre: 'Autre',
+};
+
 const EMPTY_USER = { name: '', email: '', password: '', role: 'commercial', client_id: '', phone: '', job_title: '', is_active: true };
 
 export default function Admin() {
@@ -12,6 +20,7 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [clients, setClients] = useState([]);
   const [activity, setActivity] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [house, setHouse] = useState(settings);
   const [form, setForm] = useState(null);
   const [error, setError] = useState('');
@@ -27,6 +36,7 @@ export default function Admin() {
       .then(([team, journal, current, clientList]) => {
         setUsers(team);
         setClients(clientList);
+        if (user?.role === 'admin') api('/admin/contact-messages').then(setMessages).catch(() => setMessages([]));
         setActivity(journal);
         setHouse(current);
       })
@@ -75,6 +85,15 @@ export default function Admin() {
     }
   }
 
+  async function toggleHandled(message) {
+    try {
+      const saved = await api(`/admin/contact-messages/${message.id}/handled`, { method: 'POST' });
+      setMessages(messages.map((item) => (item.id === saved.id ? saved : item)));
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+
   async function saveHouse(event) {
     event.preventDefault();
     setError('');
@@ -98,7 +117,7 @@ export default function Admin() {
         </div>
       </header>
       <div className="tabs">
-        {[['equipe', 'Utilisateurs'], ['maison', 'Paramètres'], ['journal', 'Journal']].map(([value, label]) => (
+        {[['equipe', 'Utilisateurs'], ['maison', 'Paramètres'], ['journal', 'Journal'], ...(user?.role === 'admin' ? [['messages', `Messages du site${messages.filter((item) => !item.handled_at).length ? ` (${messages.filter((item) => !item.handled_at).length})` : ''}`]] : [])].map(([value, label]) => (
           <button key={value} className={`chip${tab === value ? ' on' : ''}`} type="button" onClick={() => setTab(value)}>{label}</button>
         ))}
       </div>
@@ -168,6 +187,28 @@ export default function Admin() {
             <p style={{ marginTop: 22, whiteSpace: 'pre-wrap' }}>{house.payment_note}</p>
           </aside>
         </form>
+      ) : null}
+
+      {tab === 'messages' ? (
+        <div className="card table-wrap">
+          <h2>Messages du formulaire de contact</h2>
+          {messages.length ? (
+            <table>
+              <thead><tr><th>Reçu le</th><th>Expéditeur</th><th>Objet</th><th>Message</th><th></th></tr></thead>
+              <tbody>
+                {messages.map((item) => (
+                  <tr key={item.id} style={item.handled_at ? { opacity: 0.6 } : null}>
+                    <td>{formatDate(item.created_at)}</td>
+                    <td>{item.name}<br /><small className="muted">{item.email}{item.phone ? ` · ${item.phone}` : ''}</small></td>
+                    <td>{CONTACT_SUBJECTS[item.subject] || item.subject}</td>
+                    <td style={{ maxWidth: 420, whiteSpace: 'pre-wrap' }}>{item.message}</td>
+                    <td><button className="btn btn-tiny" type="button" onClick={() => toggleHandled(item)}>{item.handled_at ? 'Rouvrir' : 'Marquer traité'}</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <p className="muted">Aucun message pour l’instant.</p>}
+        </div>
       ) : null}
 
       {tab === 'journal' ? (

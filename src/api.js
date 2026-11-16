@@ -36,7 +36,7 @@ export async function api(path, { method = 'GET', body } = {}) {
   if (response.status === 401 && path !== '/login') {
     setToken(null);
     if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/inscription')) {
-      const publicPage = ['/', '/vision', '/a-propos', '/fonctionnalites', '/secteurs', '/demo', '/tarifs', '/conseils'].includes(window.location.pathname);
+      const publicPage = ['/', '/vision', '/a-propos', '/fonctionnalites', '/secteurs', '/demo', '/tarifs', '/conseils', '/contact'].includes(window.location.pathname);
       if (!publicPage) window.location.assign('/login');
     }
   }

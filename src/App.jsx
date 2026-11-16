@@ -17,7 +17,7 @@ import Projects from './pages/Projects';
 import QuoteStudio from './pages/QuoteStudio';
 import Quotes from './pages/Quotes';
 import Register from './pages/Register';
-import { About, Advice, Demo, Features, Home, Pricing, Sectors, SiteLayout, Vision } from './pages/Site';
+import { About, Advice, Contact, Demo, Features, Home, Pricing, Sectors, SiteLayout, Vision } from './pages/Site';
 import Stats from './pages/Stats';
 
 function RequireAuth() {
@@ -49,6 +49,7 @@ export default function App() {
           <Route path="conseils" element={<Advice />} />
           <Route path="vision" element={<Vision />} />
           <Route path="a-propos" element={<About />} />
+          <Route path="contact" element={<Contact />} />
           <Route path="login" element={<Login />} />
           <Route path="inscription" element={<Register />} />
         </Route>

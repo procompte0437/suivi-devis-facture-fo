@@ -1,255 +1,199 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { MODULES } from './site/data';
+import { PageCta, SiteIcon } from './site/SiteParts';
 
-const ASKS = [
-  ['Devis', 'Le client peut-il valider le devis lui-même ?', 'Oui. Une fois le devis envoyé, le client l’ouvre dans son espace et l’accepte ou le refuse. La date et l’auteur de la décision sont enregistrés.', 'Responsable commercial'],
-  ['Factures', 'Faut-il ressaisir les lignes du devis ?', 'Non. La facture est générée à partir du devis accepté, avec les mêmes lignes, la même TVA et la même remise.', 'Comptable'],
-  ['Projets', 'Comment le client suit-il l’avancement ?', 'Le chef de projet met à jour le pourcentage, l’état et les étapes, avec un commentaire. Le client voit ces mises à jour dans son espace.', 'Chef de projet'],
-];
-
-const ROLE_CARDS = [
-  ['Commercial', 'Gère les clients, prépare les devis et les envoie.'],
-  ['Comptable', 'Génère les factures et enregistre les paiements.'],
-  ['Client', 'Consulte ses devis, ses factures et l’avancement de ses projets.'],
-];
+const PROFILES = {
+  entreprise: {
+    label: 'Je gère une entreprise',
+    title: 'Mettez en place votre suivi en quelques étapes.',
+    items: [
+      ['Créer votre compte et votre entreprise', '/inscription'],
+      ['Ajouter vos clients et préparer un premier devis', '/fonctionnalites#devis'],
+      ['Choisir un modèle de devis ou de facture', '/fonctionnalites#devis'],
+      ['Transformer un devis accepté en facture', '/fonctionnalites#factures'],
+      ['Enregistrer les paiements et suivre le reste à payer', '/fonctionnalites#factures'],
+      ['Ouvrir un projet, définir ses étapes et publier l’avancement', '/fonctionnalites#projets'],
+      ['Donner un accès à chaque membre de l’équipe selon son rôle', '/fonctionnalites#roles'],
+    ],
+  },
+  client: {
+    label: 'Je suis client',
+    title: 'Suivez vos dossiers sans avoir à appeler.',
+    items: [
+      ['Se connecter avec le compte fourni par votre prestataire', '/login'],
+      ['Consulter vos devis et les accepter ou les refuser en ligne', '/fonctionnalites#espace-client'],
+      ['Voir vos factures, ce qui est payé et ce qui reste à payer', '/fonctionnalites#espace-client'],
+      ['Suivre l’avancement et les étapes de vos projets', '/fonctionnalites#espace-client'],
+      ['Imprimer ou enregistrer vos documents en PDF', '/fonctionnalites#devis'],
+    ],
+  },
+};
 
 const TRADES = [
-  ['/home/metier-platre.jpg', 'Artisans', 'Devis, acomptes et étapes de chaque intervention.', '/secteurs#ateliers', 'Menuiserie, plâtrerie, fabrication'],
-  ['/home/metier-peinture.jpg', 'Agences et bureaux', 'Plusieurs clients en parallèle, chacun avec ses devis et ses factures.', '/secteurs#agences', 'Conseil, communication, études'],
-  ['/home/metier-plomberie.jpg', 'Chantiers', 'Étapes, budget et planning des travaux.', '/secteurs#btp', 'BTP, second œuvre, réseaux'],
+  ['/home/metier-platre.jpg', 'Artisans', 'Devis, acomptes et étapes de chaque intervention.', '/secteurs#artisans', 'Menuiserie, plâtrerie'],
+  ['/home/metier-peinture.jpg', 'Agences et bureaux', 'Plusieurs clients suivis en parallèle, chacun avec ses pièces.', '/secteurs#agences', 'Conseil, communication'],
+  ['/home/metier-plomberie.jpg', 'BTP et chantiers', 'Étapes, budget et planning des travaux.', '/secteurs#btp', 'Gros œuvre, réseaux'],
 ];
 
 export function Home() {
   const [stats, setStats] = useState(null);
-  const [ask, setAsk] = useState('');
-  const [openAsk, setOpenAsk] = useState(0);
+  const [profile, setProfile] = useState('entreprise');
+  const [lead, setLead] = useState({ name: '', email: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
-    api('/stats').then(setStats).catch(() => setStats({ quotes: 0, invoices: 0, companies: 0 }));
+    api('/stats').then(setStats).catch(() => setStats(null));
   }, []);
 
   function start(event) {
     event.preventDefault();
-    const query = ask.trim();
-    navigate(query ? `/inscription?activite=${encodeURIComponent(query)}` : '/inscription');
+    navigate('/inscription', { state: { name: lead.name.trim(), email: lead.email.trim() } });
   }
 
+  const current = PROFILES[profile];
+
   return (
-    <main className="tx">
-      <section className="tx-hero">
-        <div className="tx-hero-copy">
-          <p className="tx-hero-kicker">Devis, factures, projets</p>
-          <h1>Vos devis, factures et projets au même endroit.</h1>
-          <form onSubmit={start}>
-            <label htmlFor="dossier">Quelle est votre activité ?</label>
-            <div>
-              <input id="dossier" value={ask} onChange={(event) => setAsk(event.target.value)} placeholder="Par exemple : menuiserie, BTP, agence" />
-              <button type="submit" aria-label="Créer un compte">→</button>
-            </div>
-          </form>
-        </div>
-        <figure className="tx-dossier">
-          <div className="tx-sheet back" aria-hidden="true" />
-          <div className="tx-sheet">
-            <header>
-              <span>DEV-2026-014</span>
-              <b>En suivi</b>
-            </header>
-            <h2>Parquet, atelier Louis</h2>
-            <ul>
-              <li><i />Devis accepté<small>12 lignes</small></li>
-              <li><i />Facture partielle<small>40 % encaissés</small></li>
-              <li><i className="now" />Pose en cours<small>Jalon 3 sur 4</small></li>
+    <main>
+      <section className="st-hero">
+        <div className="st-wrap">
+          <div>
+            <h1>Vos devis, factures et <mark>projets clients</mark> au même endroit</h1>
+            <ul className="st-hero-points">
+              <li><span><b>Créez</b> vos devis et faites-les valider en ligne par le client</span></li>
+              <li><span><b>Facturez</b> sans ressaisie et suivez chaque paiement</span></li>
+              <li><span><b>Publiez</b> l’avancement des projets, visible par vos clients</span></li>
             </ul>
-            <div className="tx-plan" aria-hidden="true">
-              <svg viewBox="0 0 280 92">
-                <rect x="8" y="10" width="78" height="18" />
-                <rect x="90" y="10" width="64" height="18" />
-                <rect x="158" y="10" width="108" height="18" />
-                <rect x="8" y="32" width="46" height="18" />
-                <rect x="58" y="32" width="96" height="18" />
-                <rect x="158" y="32" width="52" height="18" />
-                <rect x="214" y="32" width="52" height="18" />
-                <rect x="8" y="54" width="110" height="18" />
-                <rect x="122" y="54" width="70" height="18" />
-                <rect x="196" y="54" width="70" height="18" />
-              </svg>
-              <span>Plan de pose</span>
+            <form className="st-hero-form" onSubmit={start}>
+              <input aria-label="Votre nom" placeholder="Votre nom" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} autoComplete="name" />
+              <input aria-label="Votre e-mail" type="email" placeholder="Votre e-mail" value={lead.email} onChange={(event) => setLead({ ...lead, email: event.target.value })} autoComplete="email" />
+              <button className="st-btn brass" type="submit">Créer mon compte</button>
+            </form>
+            <p className="st-hero-note">Gratuit pendant la phase de test. Vous pouvez aussi <Link to="/demo" style={{ color: 'var(--st-forest)', fontWeight: 600 }}>essayer la démonstration</Link> sans vous inscrire.</p>
+          </div>
+
+          <div className="st-stack" aria-hidden="true">
+            <div className="st-sheet s1">
+              <header><span>DEV-2026-0012</span><b>Accepté</b></header>
+              <h3>Signalétique intérieure</h3>
+              <table>
+                <tbody>
+                  <tr><td>Plan de signes</td><td>780 000</td></tr>
+                  <tr><td>Fabrication et pose</td><td>2 600 000</td></tr>
+                </tbody>
+                <tfoot><tr><td>Total TTC</td><td>3 988 400 F</td></tr></tfoot>
+              </table>
+            </div>
+            <div className="st-sheet s2">
+              <header><span>FAC-2026-0009</span><b style={{ background: 'var(--st-brass)' }}>Partielle</b></header>
+              <h3>Reste à payer</h3>
+              <div className="st-bar"><span style={{ width: '40%' }} /></div>
+              <small style={{ color: 'var(--st-muted)' }}>1 595 360 F reçus sur 3 988 400 F</small>
+            </div>
+            <div className="st-sheet s3">
+              <header><span>PRJ-002</span><b>45 %</b></header>
+              <h3>Suivi du projet</h3>
+              <ul className="st-steps-mini">
+                <li><i />Relevé des espaces<small>fait</small></li>
+                <li><i />Plan de signes<small>fait</small></li>
+                <li><i className="now" />Fabrication<small>en cours</small></li>
+                <li><i className="todo" />Pose<small>25 nov.</small></li>
+              </ul>
             </div>
           </div>
-          <figcaption>Exemple de suivi de projet</figcaption>
-        </figure>
-      </section>
-
-      <section className="tx-trust" aria-label="Repères">
-        <p>Données de la <b>démonstration</b></p>
-      </section>
-
-      <section className="tx-stats" aria-label="Activité de la démonstration">
-        <p><b>{stats ? stats.quotes : '—'}</b><span>devis</span></p>
-        <p><b>{stats ? stats.invoices : '—'}</b><span>factures</span></p>
-        <p><b>10</b><span>modèles de documents</span></p>
-      </section>
-
-      <section className="tx-steps">
-        <h2>Comment ça marche</h2>
-        <ol>
-          <li>
-            <StepIcon kind="doc" />
-            <small>Étape 1</small>
-            <strong>Le commercial crée et envoie le devis</strong>
-          </li>
-          <li>
-            <StepIcon kind="models" />
-            <small>Étape 2</small>
-            <strong>Le client l’accepte en ligne</strong>
-          </li>
-          <li>
-            <StepIcon kind="plan" />
-            <small>Étape 3</small>
-            <strong>Facture, paiements et projet suivis</strong>
-          </li>
-        </ol>
-        <Link to="/fonctionnalites">Voir les fonctionnalités</Link>
-      </section>
-
-      <section className="tx-why">
-        <h2>Pourquoi DOUKOU</h2>
-        <p>DOUKOU veut dire « suivre » en nzebi. Au lieu d’un devis sous Word, d’un tableau Excel pour les paiements et d’échanges par téléphone pour l’avancement, tout est rangé dans un seul outil, avec un accès adapté à chaque rôle.</p>
-        <Link to="/a-propos">En savoir plus sur DOUKOU</Link>
-      </section>
-
-      <section className="tx-split">
-        <div>
-          <article>
-            <h2>Des documents prêts à imprimer</h2>
-            <p>Cinq modèles de devis et cinq modèles de facture. Le total, la TVA et la remise sont calculés automatiquement, et chaque document s’imprime ou s’enregistre en PDF.</p>
-          </article>
-          <article>
-            <h2>Un planning par projet</h2>
-            <p>Dates prévues, étapes, tâches assignées et diagramme de Gantt. Chaque mise à jour d’avancement est datée.</p>
-          </article>
-          <article>
-            <h2>Les paiements à jour</h2>
-            <p>Chaque paiement est enregistré avec sa date et son mode. Le reste à payer et le statut de la facture se mettent à jour seuls.</p>
-          </article>
         </div>
-        <Phone />
       </section>
 
-      <section className="tx-ready">
-        <h2>Essayer DOUKOU</h2>
-        <Link to="/inscription">Créer un compte</Link>
-      </section>
-
-      <section className="tx-asks">
-        <header>
-          <h2>Questions fréquentes</h2>
-          <p>Ce que l’on nous demande le plus souvent.</p>
-        </header>
-        <div>
-          {ASKS.map(([kicker, title, text, who], index) => (
-            <article key={title}>
-              <small>{kicker}</small>
-              <h3>{title}</h3>
-              <p>{who}</p>
-              {openAsk === index ? <p className="more">{text}</p> : null}
-              <button type="button" onClick={() => setOpenAsk(openAsk === index ? -1 : index)}>
-                {openAsk === index ? 'Réduire' : 'En savoir plus'}
+      <section className="st-section">
+        <div className="st-wrap">
+          <header className="st-section-title">
+            <h2>Un seul outil pour suivre chaque dossier client</h2>
+            <p>Du premier devis au dernier paiement, l’équipe et le client voient les mêmes informations, chacun selon ses droits.</p>
+          </header>
+          <div className="st-pills" role="tablist" aria-label="Votre profil">
+            {Object.entries(PROFILES).map(([key, item]) => (
+              <button key={key} type="button" role="tab" aria-selected={profile === key} className={profile === key ? 'on' : ''} onClick={() => setProfile(key)}>
+                <SiteIcon name="check" />
+                {item.label}
               </button>
-            </article>
-          ))}
+            ))}
+          </div>
+          <div className="st-checks" role="tabpanel">
+            <h3>{current.title}</h3>
+            <ul>
+              {current.items.map(([text, href]) => (
+                <li key={text}><Link to={href}><SiteIcon name="check" />{text}</Link></li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
-      <section className="tx-popular">
-        <h2>Pour quels métiers ?</h2>
-        <div>
-          {TRADES.map(([src, title, text, href, meta]) => (
-            <article key={title}>
-              <img src={src} alt="" />
-              <div>
+      <section className="st-section tint">
+        <div className="st-wrap">
+          <header className="st-section-title">
+            <h2>Les modules du portail</h2>
+            <p>Six modules reliés entre eux : rien n’est saisi deux fois.</p>
+          </header>
+          <div className="st-cards">
+            {MODULES.map(([title, href, icon, text]) => (
+              <Link className="st-card" to={href} key={href}>
+                <span className="ico"><SiteIcon name={icon} /></span>
                 <h3>{title}</h3>
                 <p>{text}</p>
-                <footer><span>{meta}</span><Link to={href}>En savoir plus</Link></footer>
-              </div>
-            </article>
-          ))}
+                <span className="more">En savoir plus →</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="tx-pro">
-        <img src="/home/pro-chantier.jpg" alt="Électricien devant un tableau sur un chantier" />
-        <div>
-          <h2>Vous tenez plusieurs entreprises ?</h2>
-          <p className="lead">Passez de l’une à l’autre sans mélanger les données.</p>
-          <p>Un même compte peut gérer plusieurs entreprises. Chacune a ses clients, ses devis, ses factures, son équipe et ses statistiques.</p>
-          <Link to="/inscription">Créer un compte</Link>
+      <section className="st-section">
+        <div className="st-wrap">
+          <header className="st-section-title">
+            <h2>Comment ça marche</h2>
+          </header>
+          <ol className="st-flow">
+            <li><strong>Le commercial envoie le devis</strong><span>Lignes, quantités, prix : le total est calculé.</span></li>
+            <li><strong>Le client l’accepte en ligne</strong><span>La décision est datée et signée de son nom.</span></li>
+            <li><strong>Facture, paiements, projet</strong><span>Le comptable facture, le chef de projet publie l’avancement.</span></li>
+          </ol>
         </div>
       </section>
 
-      <section className="tx-app">
-        <div>
-          <h2>Sur ordinateur et sur téléphone</h2>
-          <p>DOUKOU fonctionne dans le navigateur, sans installation. L’équipe et les clients s’y connectent depuis le bureau ou depuis le chantier.</p>
-          <Link to="/demo">Entrer dans la démonstration</Link>
-        </div>
-        <Phone />
-      </section>
-
-      <section className="tx-reviews">
-        <img src="/home/bandeau-equipe.jpg" alt="Deux artisans dans un jardin" />
-        <div className="tx-review-row">
-          <article className="pitch">
-            <h2>Un accès pour chaque rôle</h2>
-            <p>Chacun voit ce qui le concerne et ne modifie que son propre module.</p>
-            <Link to="/demo">Voir les comptes de démonstration</Link>
-          </article>
-          {ROLE_CARDS.map(([role, text]) => (
-            <article key={role}>
-              <b>{role}</b>
-              <p>{text}</p>
-            </article>
-          ))}
+      <section className="st-figures" aria-label="La démonstration en chiffres">
+        <div className="st-wrap">
+          <p><b>{stats ? stats.quotes : '—'}</b><span>devis</span></p>
+          <p><b>{stats ? stats.invoices : '—'}</b><span>factures</span></p>
+          <p><b>10</b><span>modèles de documents</span></p>
+          <p><b>5</b><span>rôles d’accès</span></p>
+          <small>Données de l’entreprise de démonstration.</small>
         </div>
       </section>
 
-      <p className="tx-close">
-        <Link to="/inscription">Créer un compte <span aria-hidden="true">→</span></Link>
-      </p>
+      <section className="st-section">
+        <div className="st-wrap">
+          <header className="st-section-title">
+            <h2>Pour quels métiers ?</h2>
+            <p>Pour les entreprises de services et de travaux qui vendent sur devis.</p>
+          </header>
+          <div className="st-cards">
+            {TRADES.map(([src, title, text, href, meta]) => (
+              <Link className="st-card photo" to={href} key={title}>
+                <img src={src} alt="" />
+                <div>
+                  <small>{meta}</small>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <PageCta />
     </main>
-  );
-}
-
-function StepIcon({ kind }) {
-  const paths = {
-    doc: 'M8 4h8l4 4v12H8zM16 4v4h4M11 12h6M11 16h6',
-    models: 'M6 8h8v10H6zM10 6h8v10',
-    plan: 'M5 16V8h4v8M11 16V5h4v11M17 16v-6h4v6',
-  };
-  return (
-    <span className={`tx-icon ${kind}`} aria-hidden="true">
-      <svg viewBox="0 0 28 28">
-        <path d={paths[kind]} fill="none" stroke="currentColor" strokeWidth="1.6" />
-      </svg>
-    </span>
-  );
-}
-
-function Phone() {
-  return (
-    <div className="tx-phone" aria-hidden="true">
-      <header><b>Nouveau devis</b><span>×</span></header>
-      <p>Modèle du document</p>
-      <ul>
-        <li>Nomade</li>
-        <li className="on">Chantier</li>
-        <li>Cèdre</li>
-      </ul>
-      <label>Montant de l’acompte <input readOnly value="800 000" /></label>
-      <footer><span>Précédent</span><b>Suivant</b></footer>
-    </div>
   );
 }
