@@ -127,7 +127,7 @@ export function computeTotals(lines, discount = 0, taxRate = 0) {
 }
 
 export function tintFor(text = '') {
-  const palette = ['#1E6B45', '#1F5C62', '#8A6232', '#3E5348', '#6D4C41'];
+  const palette = ['#8A6A2E', '#1F5C62', '#5E4719', '#3E5348', '#6D4C41'];
   let hash = 0;
   for (const char of text) hash = (hash + char.charCodeAt(0)) % palette.length;
   return palette[hash];

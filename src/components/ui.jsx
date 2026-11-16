@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 export function Mark({ size = 36 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <rect width="48" height="48" rx="14" fill="#1C3D30" />
-      <path d="M24 9c2.2 6.2 2.2 10.4 0 16.6 4.4-2.2 8.6-2.1 13 1.2-6.4 1-9.6 4.2-10.6 9.6-1.2-6.4-5.4-9.4-12.8-9.6 5.2-2.4 8.4-5.6 10.4-17.8z" fill="#CDE5D4" />
+      <rect width="48" height="48" rx="14" fill="#5E4719" />
+      <path d="M24 9c2.2 6.2 2.2 10.4 0 16.6 4.4-2.2 8.6-2.1 13 1.2-6.4 1-9.6 4.2-10.6 9.6-1.2-6.4-5.4-9.4-12.8-9.6 5.2-2.4 8.4-5.6 10.4-17.8z" fill="#E6D3AD" />
     </svg>
   );
 }

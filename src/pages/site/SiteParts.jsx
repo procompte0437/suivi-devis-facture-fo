@@ -236,7 +236,7 @@ function SiteFooter() {
     <footer className="st-foot">
       <div className="st-wrap">
         <div className="st-foot-logo">
-          <Link to="/" aria-label="DOUKOU, accueil"><img src="/logo/logo-doukou-clair.png" alt="DOUKOU" /></Link>
+          <Link to="/" aria-label="DOUKOU, accueil"><img src="/logo/logo-doukou.png" alt="DOUKOU" /></Link>
         </div>
         <div className="st-foot-cols">
           <div>
