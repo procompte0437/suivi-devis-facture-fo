@@ -94,7 +94,6 @@ export default function Clients() {
   statuses.forEach((item) => {
     statusMap[item.code] = { label: item.label, tone: CLIENT_STATUS[item.code]?.tone || 'mute' };
   });
-  const societes = refs?.societe || [];
   const optionsStatut = [{ valeur: '', libelle: 'Tous' }, ...statuses.map((item) => ({ valeur: item.code, libelle: item.label }))];
   const liste = useListePaginee(rows, 10);
 
@@ -109,25 +108,7 @@ export default function Clients() {
     }
   }
 
-  function applySociete(id) {
-    const item = societes.find((row) => String(row.id) === String(id));
-    if (!item) {
-      setForm({ ...form, societe_id: '', company: '' });
-      return;
-    }
-    const meta = item.meta || {};
-    setForm({
-      ...form,
-      societe_id: item.id,
-      company: item.label,
-      contact_name: meta.contact_name || form.contact_name,
-      email: meta.email || form.email || '',
-      phone: meta.phone || form.phone || '',
-      address: meta.address || form.address || '',
-      city: meta.city || form.city || '',
-      tax_id: meta.tax_id || form.tax_id || '',
-    });
-  }
+
 
   return (
     <div className="page">
@@ -152,7 +133,7 @@ export default function Clients() {
             recherche={query}
             onRecherche={setQuery}
             onValiderRecherche={() => loadList()}
-            placeholderRecherche="Société, contact, ville"
+            placeholderRecherche="Nom, contact, ville"
             taille={liste.taille}
             onTaille={liste.changerTaille}
             chargement={loading}
@@ -242,9 +223,9 @@ export default function Clients() {
           <form className="stack" onSubmit={save}>
             <div className="fields">
               <Field label="Type">
-                <select value={form.kind || 'entreprise'} onChange={(event) => setForm({ ...form, kind: event.target.value, societe_id: event.target.value === 'individuel' ? '' : form.societe_id })}>
+                <select value={form.kind || 'entreprise'} onChange={(event) => setForm({ ...form, kind: event.target.value, societe_id: '' })}>
                   <option value="entreprise">Entreprise</option>
-                  <option value="individuel">Individuel</option>
+                  <option value="individuel">Particulier</option>
                 </select>
               </Field>
               <Field label="Statut">
@@ -255,13 +236,10 @@ export default function Clients() {
               {form.kind === 'individuel' ? (
                 <Field label="Nom" wide><input value={form.contact_name} onChange={(event) => setForm({ ...form, contact_name: event.target.value, company: event.target.value })} required /></Field>
               ) : (
-                <Field label="Société" wide>
-                  <select value={form.societe_id || ''} onChange={(event) => applySociete(event.target.value)} required>
-                    <option value="">Choisir une société</option>
-                    {societes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                  </select>
-                  {societes.length === 0 ? <small className="muted">Aucune société : ajoutez-les dans le <Link to="/referentiel">référentiel</Link>.</small> : null}
-                </Field>
+                <>
+                  <Field label="Entreprise" wide><input value={form.company || ''} onChange={(event) => setForm({ ...form, company: event.target.value, societe_id: '' })} required placeholder="Nom de l’entreprise cliente" /></Field>
+                  <Field label="Identifiant fiscal"><input value={form.tax_id || ''} onChange={(event) => setForm({ ...form, tax_id: event.target.value })} /></Field>
+                </>
               )}
               {form.kind === 'entreprise' ? (
                 <Field label="Contact" wide><input value={form.contact_name} onChange={(event) => setForm({ ...form, contact_name: event.target.value })} required /></Field>

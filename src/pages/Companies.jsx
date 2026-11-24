@@ -162,7 +162,7 @@ export default function Companies() {
           <p className="kicker">Référentiel</p>
           <div className="titre-avec-info">
             <h1>Référentiel</h1>
-            <IconeInformation titre="Référentiel" texte="Les listes de l’entreprise : la fiche, les sociétés, les rôles du personnel, les villes, les statuts, les formes et les pays. Chaque liste est un onglet." />
+            <IconeInformation titre="Référentiel" texte="Les listes de l’entreprise : vos entreprises, les rôles du personnel, les villes, les statuts, les formes et les pays. Les clients, entreprises ou particuliers, se gèrent dans l’onglet Clients." />
           </div>
         </div>
         {canCompany && onglet === 'entreprises' ? <button className="btn" type="button" onClick={() => setCreation({ ...EMPTY })}>Nouvelle entreprise</button> : null}
@@ -170,8 +170,6 @@ export default function Companies() {
       <div className="tabs" role="tablist" aria-label="Rubriques du référentiel">
         {[
           ['entreprises', 'Entreprises'],
-          ['societes', 'Sociétés'],
-          ['clients', 'Clients par société'],
           ['roles', 'Rôles du personnel'],
           ['ville', 'Villes'],
           ['statut', 'Statuts'],
